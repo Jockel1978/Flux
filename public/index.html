@@ -8,6 +8,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Flux">
 <title>Flux – Aufgaben & Notizen</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <style>
 :root{--bg:#f3f4f9;--panel:#fff;--panel2:#f7f8fc;--text:#161826;--muted:#6b7090;--line:#e5e7f0;--accent:#6366f1;--accent-soft:color-mix(in srgb,var(--accent) 12%,transparent);--danger:#ef4444;--ok:#10b981;--p1:#ef4444;--p2:#f59e0b;--p3:#3b82f6;--p4:#a0a6c0;--shadow:0 1px 2px rgba(20,24,50,.05),0 10px 30px rgba(20,24,50,.07);--r:14px;--side:268px}
 :root[data-mode=dark]{--bg:#0d0e16;--panel:#161827;--panel2:#1b1e30;--text:#eceefa;--muted:#8b90b2;--line:#262a41;--shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35)}
@@ -688,6 +691,7 @@ function intake(){const raw=location.search.slice(1)||(location.hash.includes('?
 /* ============ Init ============ */
 applyTheme();matchMedia('(prefers-color-scheme:dark)').addEventListener&&matchMedia('(prefers-color-scheme:dark)').addEventListener('change',applyTheme);
 intake();paint();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 window.addEventListener('resize',()=>{if(viewType()==='notes')renderDetail()});
 </script>
 </body>
