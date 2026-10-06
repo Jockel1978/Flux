@@ -1,0 +1,8 @@
+{
+  "name": "flux-fb-bundle",
+  "private": true,
+  "description": "Baut ../public/fb.js (Firebase Auth + Firestore). Ausfuehren: npm install && npm run build",
+  "scripts": { "build": "esbuild entry.js --bundle --minify --format=iife --outfile=../public/fb.js" },
+  "dependencies": { "firebase": "^11.0.0" },
+  "devDependencies": { "esbuild": "^0.24.0" }
+}

@@ -289,6 +289,7 @@ a.btn{text-decoration:none}
 </div>
 <div id="modal"></div>
 <div id="toast"></div>
+<script src="fb.js" defer></script>
 <script>
 'use strict';
 /* ============ Utils ============ */
@@ -339,11 +340,12 @@ image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r=
 table:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16M15 4v16"/>',
 rota:'<path d="M8 2v4M16 2v4M3 8h18"/><rect x="3" y="4" width="18" height="17" rx="2"/><path d="m9 15 2 2 4-4"/>',
 bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',
+user:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
 tpl:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>'};
 const ic=n=>`<svg class="i" viewBox="0 0 24 24">${IC[n]||''}</svg>`;
 
 /* ============ State ============ */
-const KEY='flux-v1';
+const GKEY='flux-v1';let KEY=GKEY;try{const lu=localStorage.getItem('flux-last-uid');if(lu)KEY='flux-u-'+lu}catch(e){}
 const defaults=()=>({v:1,tasks:[],notes:[],events:[],templates:[],img:{},shifts:{types:[{id:'F',name:'Frühschicht',short:'F',color:'#f59e0b',start:'06:00',end:'14:00'},{id:'S',name:'Spätschicht',short:'S',color:'#3b82f6',start:'14:00',end:'22:00'},{id:'N',name:'Nachtschicht',short:'N',color:'#6366f1',start:'22:00',end:'06:00'},{id:'X',name:'Frei',short:'–',color:'#94a3b8',start:'',end:''},{id:'U',name:'Urlaub',short:'U',color:'#10b981',start:'',end:''}],days:{}},areas:[{id:'privat',name:'Privat',color:'#ec4899'},{id:'beruf',name:'Beruf',color:'#0ea5e9'}],
  set:{theme:'auto',accent:'#6366f1',webhook:'',notify:false,autoGcal:false,hooks:{'task.created':true,'task.completed':true,'task.updated':false,'note.created':true,'note.updated':false},gClient:'',feeds:[]}});
 function seed(){const S=defaults(),t=today(),now=Date.now();
@@ -358,9 +360,11 @@ function seed(){const S=defaults(),t=today(),now=Date.now();
  return S}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);const D=defaults();return Object.assign(D,d,{set:{...D.set,...(d.set||{}),hooks:{...D.set.hooks,...((d.set||{}).hooks||{})}}})}}catch(e){}return seed()}
 let S=load();
-if(!S.shifts||!S.shifts.types)S.shifts=defaults().shifts;if(!S.shifts.days)S.shifts.days={};if(!S.img)S.img={};if(!S.templates)S.templates=[];
-S.tasks.forEach(t=>{if(!t.status)t.status='todo';if(t.remind==null)t.remind=''});S.notes.forEach(n=>{if(n.parent===undefined)n.parent=null});
-let _st,_qw=0;function save(){clearTimeout(_st);_st=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){if(Date.now()-_qw>10000){_qw=Date.now();toast('Speicher voll – Backup machen, Bilder entfernen')}}},250)}
+function fixS(){if(!S.shifts||!S.shifts.types)S.shifts=defaults().shifts;if(!S.shifts.days)S.shifts.days={};if(!S.img)S.img={};if(!S.templates)S.templates=[];
+S.tasks.forEach(t=>{if(!t.status)t.status='todo';if(t.remind==null)t.remind=''});S.notes.forEach(n=>{if(n.parent===undefined)n.parent=null})}
+fixS();
+let _st,_qw=0;function persist(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){if(Date.now()-_qw>10000){_qw=Date.now();toast('Speicher voll – Backup machen, Bilder entfernen')}}}
+function save(){S._ts=Date.now();if(typeof fb!=='undefined'&&fb.hold)return;clearTimeout(_st);_st=setTimeout(()=>{persist();if(typeof syncQueue==='function')syncQueue()},250)}
 const ui={view:'today',sel:null,calMode:'month',calDate:today(),calSel:today(),nq:'',nmode:innerWidth>1250?'split':'edit',modal:false,doneOpen:false,slash:null,q:'',boardArea:'',shDate:today(),brush:'F',collapsed:{},sheet:null,wkScroll:null,pendingParent:null};
 const area=id=>S.areas.find(a=>a.id===id);
 const getTask=id=>S.tasks.find(t=>t.id===id);
@@ -491,6 +495,7 @@ function renderSide(){const t=today(),op=openT();
  ${S.areas.map(a=>`<button class="nav area ${ui.view==='area:'+a.id?'on':''}" data-act="nav" data-v="area:${a.id}" title="${esc(a.name)}"><span class="dot" style="--c:${a.color}"></span><span class="label">${esc(a.name)}</span><em>${op.filter(x=>x.area===a.id).length||''}</em></button>`).join('')}
  ${tags.length?'<div class="sec">Tags</div>'+tags.map(([g,c])=>`<button class="nav tag ${ui.view==='tag:'+g?'on':''}" data-act="nav" data-v="tag:${esc(g)}" title="#${esc(g)}">${ic('tag')}<span class="label">${esc(g)}</span><em>${c}</em></button>`).join(''):''}
  <div class="grow"></div>
+ <button class="nav" data-act="acct" title="Konto &amp; Sync">${ic('user')}<span class="label">${fb.user?esc((fb.user.displayName||fb.user.email||'Konto').split(/[ @]/)[0]):'Anmelden'}</span>${fb.user?`<em style="color:${fb.state==='err'?'#ef4444':fb.state==='sync'?'#f59e0b':'#10b981'};background:none">●</em>`:''}</button>
  <button class="nav" data-act="settings" title="Einstellungen">${ic('set')}<span class="label">Einstellungen</span></button>`}
 
 /* ============ Rendering: task lists ============ */
@@ -618,6 +623,7 @@ function settingsHTML(){const base=location.origin==='null'||location.protocol==
  <div class="code">${esc(base)}?note=Titel&amp;body=Text&amp;area=beruf</div>
  <div class="code">${esc(base)}?title=Seitentitel&amp;url=https://…&amp;text=…</div>
  <div class="row2"><button class="btn sec2 sm" data-act="copy-bm">${ic('copy')} Bookmarklet kopieren</button><span class="hint">Legt aus jeder Webseite eine Aufgabe an.</span></div>
+ <h4>Konto &amp; Sync</h4><p class="hint">${fb.user?'Angemeldet als <b>'+esc(fb.user.email||'')+'</b> · '+esc(fbStatusText()):'Nicht angemeldet – Daten liegen nur auf diesem Gerät.'}</p><div class="row2"><button class="btn sec2 sm" data-act="acct">${ic('user')} ${fb.user?'Konto verwalten':'Anmelden / Registrieren'}</button></div>
  <h4>Daten</h4><p class="hint">Lokaler Speicher: ca. ${Math.round(JSON.stringify(S).length/1024)} KB von etwa 5000 KB belegt (Bilder zählen mit).</p><div class="row2"><button class="btn sec2 sm" data-act="export-json">${ic('down')} Backup (JSON)</button><label class="btn sec2 sm" style="cursor:pointer">${ic('up')} Backup laden<input type="file" accept=".json" id="jsonFile" hidden></label><button class="btn sec2 sm" data-act="export-md">${ic('down')} Alles als Markdown</button></div>
  <div class="row2"><button class="btn danger sm" data-act="wipe">${ic('trash')} Alle Daten löschen</button></div></div></div>`}
 function openSettings(scroll){ui.modal=true;$('#modal').innerHTML=settingsHTML();if(scroll)setTimeout(()=>{const h=$('#h-cal');if(h)h.scrollIntoView()},30)}
@@ -702,6 +708,13 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  case 'gsync-all':try{let cnt=0;for(const t of S.tasks.filter(x=>!x.done&&x.due)){await gPush(t);cnt++}const pl=await gPull();toast(cnt+' Aufgaben übertragen, '+pl+' Termine geladen');paintList()}catch(err){toast(err.message)}refreshModal();break;
  case 'settings':openSettings();break;
  case 'settings-cal':openSettings(true);break;
+ case 'acct':sheet(acctSheet);break;
+ case 'g-login':fbDo(()=>FBX.google());break;
+ case 'm-login':mailAuth(false);break;
+ case 'm-reg':mailAuth(true);break;
+ case 'm-reset':{const m=($('#fbMail')||{}).value;if(!m){fb.msg='Bitte E-Mail eintragen.';sheet(acctSheet);break}fbDo(async()=>{await FBX.reset(m.trim());fb.msg='Mail zum Zurücksetzen ist unterwegs.'});break}
+ case 'fb-logout':if(confirm('Abmelden? Die Daten bleiben im Konto gespeichert.')){closeModal();await FBX.logout()}break;
+ case 'fb-now':if(fb.user){S._ts=Date.now();persist();clearTimeout(fb.pushT);pushMain();toast('Wird synchronisiert …')}break;
  case 'close-modal':closeModal();break;
  case 'set-theme':S.set.theme=v;save();applyTheme();refreshModal();break;
  case 'set-accent':S.set.accent=v;save();applyTheme();refreshModal();break;
@@ -714,7 +727,7 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  case 'copy-bm':{const b=location.origin==='null'||location.protocol==='file:'?'https://DEINE-DOMAIN.pages.dev/':location.origin+location.pathname;copyText(`javascript:(()=>{window.open('${b}?title='+encodeURIComponent(document.title)+'&url='+encodeURIComponent(location.href)+'&text='+encodeURIComponent(String(getSelection()||'')),'_blank')})()`);break}
  case 'export-json':dl('flux-backup-'+today()+'.json',JSON.stringify(S,null,1),'application/json');break;
  case 'export-md':dl('flux-export-'+today()+'.md',allMarkdown(),'text/markdown');break;
- case 'wipe':if(confirm('Wirklich ALLE Aufgaben, Notizen und Einstellungen löschen?')){localStorage.removeItem(KEY);S=defaults();S.tasks=[];S.notes=[];closeModal();ui.sel=null;applyTheme();paint()}break;
+ case 'wipe':if(confirm('Wirklich ALLE Aufgaben, Notizen und Einstellungen löschen?'+(fb.user?' Das gilt auch für dein Konto in der Cloud.':''))){localStorage.removeItem(KEY);S=defaults();S.tasks=[];S.notes=[];closeModal();ui.sel=null;applyTheme();paint();save()}break;
  }}catch(err){console.error(err);toast('Fehler: '+err.message)}});
 
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target;
@@ -749,7 +762,7 @@ document.addEventListener('change',e=>{const el=e.target;
  if(el.id==='imgIn'&&el.files[0]){addImage(el.files[0]);el.value='';return}
  if(el.dataset.line!==undefined&&ui.sel&&ui.sel.type==='note'){const n=getNote(ui.sel.id),L=n.body.split('\n'),i=+el.dataset.line;L[i]=L[i].replace(/\[( |x|X)\]/,el.checked?'[x]':'[ ]');n.body=L.join('\n');n.updated=Date.now();save();const ta=$('#nbody');if(ta)ta.value=n.body;const pv=$('#npv');if(pv)pv.innerHTML=md(n.body)}
  if(el.id==='icsFile'&&el.files[0]){const file=el.files[0];file.text().then(txt=>{const f={id:uid(),name:file.name.replace(/\.ics$/i,''),url:'',color:['#f43f5e','#8b5cf6','#14b8a6','#f59e0b','#3b82f6'][S.set.feeds.length%5]};const evs=parseICS(txt,f.id,f.color);S.set.feeds.push(f);S.events.push(...evs);save();toast(evs.length+' Termine importiert');refreshModal();paintList()})}
- if(el.id==='jsonFile'&&el.files[0]){el.files[0].text().then(txt=>{try{const d=JSON.parse(txt);if(!d.tasks||!d.notes)throw new Error('Kein Flux-Backup');if(!confirm('Aktuelle Daten durch Backup ersetzen?'))return;const D=defaults();S=Object.assign(D,d,{set:{...D.set,...(d.set||{})}});save();applyTheme();closeModal();ui.sel=null;paint();toast('Backup geladen')}catch(err){toast('Fehler: '+err.message)}})}});
+ if(el.id==='jsonFile'&&el.files[0]){el.files[0].text().then(txt=>{try{const d=JSON.parse(txt);if(!d.tasks||!d.notes)throw new Error('Kein Flux-Backup');if(!confirm('Aktuelle Daten durch Backup ersetzen?'))return;const D=defaults();S=Object.assign(D,d,{set:{...D.set,...(d.set||{})}});fixS();save();applyTheme();closeModal();ui.sel=null;paint();toast('Backup geladen')}catch(err){toast('Fehler: '+err.message)}})}});
 document.addEventListener('paste',e=>{if(e.target.id==='nbody'){const f=[...((e.clipboardData&&e.clipboardData.files)||[])].find(x=>x.type.startsWith('image/'));if(f){e.preventDefault();addImage(f)}}});
 document.addEventListener('keydown',e=>{const el=e.target;
  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();nav('search');return}
@@ -913,7 +926,7 @@ function notesColHTML(){return `<div class="head" style="margin-bottom:12px"><h1
 /* ---- Bilder in Notizen ---- */
 function addImage(file){const ta=$('#nbody');if(!ta){toast('Wechsle zu „Schreiben“ oder „Geteilt“');return}
  const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const sc=Math.min(1,1280/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
-  const url=c.toDataURL('image/jpeg',0.8),id=uid();S.img[id]=url;const name=(file.name||'Bild').replace(/\.[^.]+$/,'').replace(/[\[\]()]/g,'');
+  let url=c.toDataURL('image/jpeg',0.8);for(const q of [0.65,0.5,0.4])if(url.length>900000)url=c.toDataURL('image/jpeg',q);const id=uid();S.img[id]=url;const name=(file.name||'Bild').replace(/\.[^.]+$/,'').replace(/[\[\]()]/g,'');
   const t=$('#nbody');if(t){t.setRangeText(`\n![${name}](img:${id})\n`,t.selectionStart,t.selectionEnd,'end');t.dispatchEvent(new Event('input',{bubbles:true}))}save();toast('Bild eingefügt ('+Math.round(url.length/1024)+' KB)')};im.onerror=()=>toast('Bild konnte nicht gelesen werden');im.src=fr.result};fr.readAsDataURL(file)}
 
 /* ---- Diktat ---- */
@@ -941,9 +954,99 @@ async function fetchICS(url){url=url.replace(/^webcal:/i,'https:');
  try{const r=await fetch('api/ics?url='+encodeURIComponent(url));if(r.ok&&/calendar/.test(r.headers.get('content-type')||''))return r.text()}catch(e){}
  const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}
 
+/* ============ Konto & Sync (Firebase Auth + Firestore) ============ */
+var fb={user:null,state:'off',msg:'',hold:false,ready:false,pushT:null,unM:null,unI:null,remoteImg:null,known:new Set(),last:null,busy:false};
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const lsDel=k=>{try{localStorage.removeItem(k)}catch(e){}};
+const mainJSON=()=>{const o={...S};delete o.img;return JSON.stringify(o)};
+function fbStatusText(){return fb.state==='err'?(fb.msg||'Fehler'):fb.state==='sync'?'synchronisiere …':fb.state==='ok'?'synchronisiert':'verbinde …'}
+function fbErr(e){const c=(e&&e.code)||'';const m={
+ 'auth/popup-blocked':'Popup wurde blockiert – bitte Popups für die Seite erlauben.','auth/popup-closed-by-user':'Anmeldung abgebrochen.','auth/cancelled-popup-request':'Anmeldung abgebrochen.',
+ 'auth/unauthorized-domain':'Domain nicht autorisiert: in Firebase unter Authentication → Einstellungen → Autorisierte Domains eintragen.','auth/operation-not-allowed':'Diese Anmeldemethode ist in Firebase noch nicht aktiviert (Authentication → Anmeldemethode).',
+ 'auth/invalid-credential':'E-Mail oder Passwort falsch.','auth/wrong-password':'E-Mail oder Passwort falsch.','auth/user-not-found':'E-Mail oder Passwort falsch.','auth/invalid-email':'Ungültige E-Mail-Adresse.',
+ 'auth/email-already-in-use':'Diese E-Mail ist schon registriert – bitte anmelden.','auth/weak-password':'Passwort zu schwach (mindestens 6 Zeichen).','auth/network-request-failed':'Keine Verbindung.','auth/too-many-requests':'Zu viele Versuche – bitte kurz warten.',
+ 'permission-denied':'Keine Berechtigung: Firestore-Regeln prüfen (Regeln veröffentlicht?).','unavailable':'Server nicht erreichbar.','failed-precondition':'Firestore-Datenbank fehlt (in Firebase anlegen).'}[c];
+ return m||('Fehler: '+(c||(e&&e.message)||e))}
+function statusUI(){renderSide();if(ui.sheet===acctSheet)sheet(acctSheet);else if(ui.modal&&!ui.sheet)refreshModal()}
+function acctSheet(){
+ if(!window.FBX)return sheetHead('Konto & Sync')+'<p class="hint">Die Anmeldung konnte nicht geladen werden (offline?). Die App funktioniert weiter lokal.</p>';
+ if(fb.user){const u=fb.user;return sheetHead('Konto & Sync')+`<p><b>${esc(u.displayName||'Angemeldet')}</b><br><span class="hint">${esc(u.email||'')}</span></p>
+  <p class="hint">Status: ${esc(fbStatusText())}<br>Deine Aufgaben, Notizen, Dienstplan und Bilder werden mit deinem Konto synchronisiert und sind nur für dich sichtbar.</p>
+  <div class="row2"><button class="btn sec2 sm" data-act="fb-now">${ic('sync')} Jetzt synchronisieren</button><button class="btn danger sm" data-act="fb-logout">Abmelden</button></div>`}
+ return sheetHead('Anmelden')+`<p class="hint">Mit eigenem Konto sind deine Daten getrennt von anderen Nutzern und auf allen Geräten gleich.</p>
+  <div class="row2"><button class="btn sm" data-act="g-login" ${fb.busy?'disabled':''}>Mit Google anmelden</button></div>
+  <p class="hint" style="margin:14px 0 6px">oder mit E-Mail und Passwort:</p>
+  <input class="inp" id="fbMail" type="email" autocomplete="email" placeholder="E-Mail" style="margin-bottom:8px">
+  <input class="inp" id="fbPass" type="password" autocomplete="current-password" placeholder="Passwort (mind. 6 Zeichen)">
+  <div class="row2" style="margin-top:10px"><button class="btn sm" data-act="m-login" ${fb.busy?'disabled':''}>Anmelden</button><button class="btn sec2 sm" data-act="m-reg" ${fb.busy?'disabled':''}>Neu registrieren</button><button class="btn sec2 sm" data-act="m-reset">Passwort vergessen</button></div>
+  ${fb.msg?`<p class="hint" style="color:#ef4444;margin-top:10px">${esc(fb.msg)}</p>`:''}`}
+async function fbDo(fn){fb.busy=true;fb.msg='';if(ui.sheet===acctSheet)sheet(acctSheet);try{await fn()}catch(e){fb.msg=fbErr(e)}fb.busy=false;if(ui.sheet===acctSheet)sheet(acctSheet)}
+function mailAuth(reg){const m=($('#fbMail')||{}).value||'',p=($('#fbPass')||{}).value||'';if(!m||!p){fb.msg='Bitte E-Mail und Passwort eintragen.';sheet(acctSheet);return}fbDo(()=>reg?FBX.register(m.trim(),p):FBX.login(m.trim(),p))}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='fbPass')mailAuth(false)});
+
+/* --- lokale Daten ↔ Cloud --- */
+function blankS(){const D=defaults();D.tasks=[];D.notes=[];return D}
+function mergeS(l,r){const o=JSON.parse(JSON.stringify(r));['tasks','notes','events','templates'].forEach(k=>{o[k]=o[k]||[];const ids=new Set(o[k].map(x=>x.id));(l[k]||[]).forEach(x=>{if(!ids.has(x.id))o[k].push(x)})});
+ o.shifts=o.shifts||defaults().shifts;o.shifts.days={...((l.shifts||{}).days||{}),...(o.shifts.days||{})};return o}
+function adopt(d,ts){const D=defaults(),keep={theme:S.set.theme,notify:S.set.notify},img=S.img;
+ S=Object.assign(D,d,{set:{...D.set,...(d.set||{}),hooks:{...D.set.hooks,...((d.set||{}).hooks||{})},...keep}});S.img=img;S._ts=ts;fixS();persist();applyTheme();
+ if(ui.sel&&!getTask(ui.sel)&&!getNote(ui.sel))ui.sel=null;paint()}
+function adoptSafe(d,ts){const a=document.activeElement;if(a&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&!ui.modal){setTimeout(()=>{if(fb.user&&ts>(S._ts||0))adoptSafe(d,ts)},2500);return}adopt(d,ts)}
+function parseMain(d){try{return JSON.parse(d.json)}catch(e){return null}}
+function claimGuest(){lsSet('flux-claimed','1');if(KEY!==GKEY)lsDel(GKEY)}
+function takeGuest(){if(lsGet('flux-claimed'))return null;const r=lsGet(GKEY);if(!r)return null;try{const g=JSON.parse(r);return (g.tasks&&g.notes&&(g.tasks.length||g.notes.length))?g:null}catch(e){return null}}
+function onMain(data,meta){
+ if(!fb.user||meta.fromCache)return;
+ if(!fb.ready){
+  const guest=fb.hold?takeGuest():null;
+  if(!data){ // neues Konto ohne Cloud-Daten
+   if(fb.hold){const img=S.img;S=guest?Object.assign(defaults(),guest):seed();S.img=Object.assign({},img,(guest&&guest.img)||{});fixS();if(guest)claimGuest();else lsSet('flux-claimed','1');fb.hold=false;applyTheme();paint()}
+   fb.ready=true;S._ts=Date.now();persist();pushMain();reconcileImg();return}
+  const r=parseMain(data);if(!r){fb.state='err';fb.msg='Cloud-Daten unlesbar';statusUI();return}
+  fb.ready=true;
+  if(fb.hold){ // erstes Mal auf diesem Gerät
+   const img=S.img;
+   if(guest&&confirm('Auf diesem Gerät liegen lokale Daten. Mit deinem Konto zusammenführen?\n\nOK = zusammenführen\nAbbrechen = nur Konto-Daten verwenden')){
+    S=mergeS(guest,r);S.img=Object.assign({},img,guest.img||{});fixS();fb.hold=false;claimGuest();S._ts=Date.now();persist();applyTheme();paint();pushMain();reconcileImg();return}
+   if(guest||!lsGet('flux-claimed'))lsSet('flux-claimed','1');
+   fb.hold=false;S=Object.assign(defaults(),r);S.img=img;S._ts=data.ts||0;fixS();persist();applyTheme();paint();fb.state='ok';statusUI();reconcileImg();return}
+  const ts=data.ts||0,lt=S._ts||0;if(ts>lt)adoptSafe(r,ts);else if(ts<lt)pushMain();else{fb.state='ok';statusUI()}reconcileImg();return}
+ if(!data||meta.hasPendingWrites)return;
+ const r=parseMain(data);if(!r)return;const ts=data.ts||0;if(ts>(S._ts||0))adoptSafe(r,ts);else if(fb.state!=='err'&&!fb.pushT){fb.state='ok';statusUI()}
+}
+function syncQueue(){if(!fb.user||!fb.ready)return;clearTimeout(fb.pushT);fb.state='sync';statusUI();fb.pushT=setTimeout(pushMain,1200);reconcileImg()}
+async function pushMain(){const u=fb.user;if(!u)return;fb.pushT=null;const json=mainJSON();
+ if(json.length>950000){fb.state='err';fb.msg='Daten zu groß für den Sync (ohne Bilder über 950 KB).';statusUI();return}
+ fb.state='sync';statusUI();
+ try{await FBX.putMain(u.uid,{json,ts:S._ts||Date.now()});if(fb.user===u&&!fb.pushT){fb.state='ok';fb.msg='';statusUI()}}catch(e){if(fb.user===u){fb.state='err';fb.msg=fbErr(e);statusUI()}}}
+function onImg(list,meta){if(!fb.user||meta.fromCache)return;fb.remoteImg=new Map(list.map(x=>[x.id,x.d]));reconcileImg()}
+function reconcileImg(){const u=fb.user;if(!u||!fb.remoteImg)return;const rem=fb.remoteImg;let ch=false;const up=new Set();
+ rem.forEach((d,id)=>{if(!S.img[id]){if(fb.known.has(id)){FBX.delImg(u.uid,id).catch(()=>{})}else{S.img[id]=d;ch=true}}});
+ Object.keys(S.img).forEach(id=>{if(!rem.has(id)){if(fb.known.has(id)){delete S.img[id];ch=true}else if(S.img[id].length<1000000){up.add(id);FBX.putImg(u.uid,id,S.img[id]).catch(e=>{fb.state='err';fb.msg=fbErr(e);statusUI()})}}});
+ fb.known=new Set(Object.keys(S.img).filter(id=>rem.has(id)||up.has(id)));lsSet('flux-known-'+u.uid,JSON.stringify([...fb.known]));
+ if(ch){if(!fb.hold)persist();if(!fb.hold&&viewType()==='notes')renderDetail()}}
+function enter(u){
+ fb.user=u;fb.ready=false;fb.remoteImg=null;fb.state='sync';fb.msg='';
+ try{fb.known=new Set(JSON.parse(lsGet('flux-known-'+u.uid)||'[]'))}catch(e){fb.known=new Set()}
+ const nk='flux-u-'+u.uid;KEY=nk;lsSet('flux-last-uid',u.uid);
+ if(lsGet(nk)){S=load();fixS();fb.hold=false}else{S=blankS();fixS();fb.hold=true}
+ applyTheme();ui.sel=null;paint();
+ fb.unM=FBX.watchMain(u.uid,onMain,e=>{fb.state='err';fb.msg=fbErr(e);statusUI()});
+ fb.unI=FBX.watchImg(u.uid,onImg,e=>{fb.state='err';fb.msg=fbErr(e);statusUI()})}
+function leave(){
+ if(fb.unM)fb.unM();if(fb.unI)fb.unI();fb.unM=fb.unI=null;clearTimeout(fb.pushT);fb.pushT=null;
+ fb.user=null;fb.ready=false;fb.hold=false;fb.remoteImg=null;fb.state='off';lsDel('flux-last-uid');KEY=GKEY;S=load();fixS();applyTheme();ui.sel=null;paint()}
+function fbBoot(){const go=()=>{FBX.onUser(u=>{const had=!!fb.user;
+  if(u){if(fb.user&&fb.user.uid===u.uid){fb.user=u;return}
+   enter(u);if(ui.sheet===acctSheet){closeModal();toast('Angemeldet')}}
+  else if(had||KEY!==GKEY){leave();if(had)toast('Abgemeldet')}
+  })};
+ if(window.FBX)go();else addEventListener('fbx-ready',go,{once:true})}
+
 /* ============ Init ============ */
 applyTheme();matchMedia('(prefers-color-scheme:dark)').addEventListener&&matchMedia('(prefers-color-scheme:dark)').addEventListener('change',applyTheme);
-intake();paint();
+intake();paint();fbBoot();
 setInterval(checkReminders,30000);setTimeout(checkReminders,3000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkReminders()});autoFeeds();setInterval(autoFeeds,900000);
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 window.addEventListener('resize',()=>{if(viewType()==='notes')renderDetail()});
