@@ -991,8 +991,9 @@ async function fetchICS(url){url=url.replace(/^webcal:/i,'https:');
  const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}
 
 /* ============ Einkauf (Listen pro Markt) ============ */
-const SHOP_PRE=[['Lidl','#1d4ed8','food'],['Aldi','#0ea5e9','food'],['Edeka','#ca8a04','food'],['Rewe','#dc2626','food'],['Kaufland','#e11d48','food'],['Penny','#ef4444','food'],['Netto','#f59e0b','food'],['Globus','#7c3aed','food'],['dm','#f97316','drug'],['Rossmann','#be123c','drug'],['Müller','#fb923c','drug'],['Baumarkt','#65a30d','hw'],['Apotheke','#16a34a','pharm'],['Action','#2563eb','misc'],['Getränkemarkt','#0891b2','food'],['Bäcker','#b45309','food'],['Metzger','#9f1239','food'],['Wochenmarkt','#15803d','food'],['Sonstiges','#64748b','misc']];
-const SHOP_DEF=['Lidl','Aldi','Edeka','Rewe','Kaufland','dm','Rossmann','Baumarkt','Apotheke','Sonstiges'];
+const SHOP_PRE=[['Lidl','#1d4ed8','food'],['Aldi','#0ea5e9','food'],['Edeka','#ca8a04','food'],['Rewe','#dc2626','food'],['Kaufland','#e11d48','food'],['Penny','#ef4444','food'],['Netto','#f59e0b','food'],['Norma','#0369a1','food'],['Globus','#7c3aed','food'],['dm','#f97316','drug'],['Rossmann','#be123c','drug'],['Müller','#fb923c','drug'],['Baumarkt','#65a30d','hw'],['Apotheke','#16a34a','pharm'],['Action','#2563eb','misc'],['Getränkemarkt','#0891b2','food'],['Bäcker','#b45309','food'],['Metzger','#9f1239','food'],['Wochenmarkt','#15803d','food'],['Sonstiges','#64748b','misc']];
+const SHOP_DEF=['Rewe','Edeka','Netto','Lidl','Norma'],SHOP_OLD=['Lidl','Aldi','Edeka','Rewe','Kaufland','dm','Rossmann','Baumarkt','Apotheke','Sonstiges'];
+const shopId=n=>'s_'+n.toLowerCase().replace(/[^a-zäöüß0-9]/g,'');
 const SUG={food:['🥛 Milch','🍞 Brot','🥚 Eier','🧈 Butter','🧀 Käse','🍎 Äpfel','🍌 Bananen','🥔 Kartoffeln','🧅 Zwiebeln','🍅 Tomaten','🥒 Gurke','🥕 Möhren','🍝 Nudeln','🍚 Reis','🍗 Hähnchen','🥩 Hackfleisch','☕ Kaffee','🍫 Schokolade','💧 Wasser','🍺 Bier','🧃 Saft','🥓 Wurst'],
  drug:['🧻 Klopapier','🧴 Duschgel','🪥 Zahnpasta','🧼 Seife','🧴 Shampoo','🧽 Spülmittel','🧺 Waschmittel','🤧 Taschentücher','🧴 Deo','🗑️ Müllbeutel','🕯️ Kerzen','🔋 Batterien'],
  hw:['🔩 Schrauben','🧱 Dübel','🔌 Kabelbinder','📏 Klebeband','🎨 Farbe','💡 Glühbirnen','🔋 Batterien','🪚 Sägeblatt','🧤 Handschuhe','🧴 Silikon'],
@@ -1000,9 +1001,12 @@ const SUG={food:['🥛 Milch','🍞 Brot','🥚 Eier','🧈 Butter','🧀 Käse'
  misc:['🎁 Geschenk','🕯️ Kerzen','🔋 Batterien','🧻 Küchenrolle','🛍️ Tüten']};
 const shopEmoji=(()=>{const m={};Object.values(SUG).flat().forEach(x=>{const i=x.indexOf(' ');m[x.slice(i+1).toLowerCase()]=x.slice(0,i)});return n=>m[String(n).toLowerCase()]||''})();
 const shopPre=n=>SHOP_PRE.find(p=>p[0]===n);
-function shopDefault(){return{lists:SHOP_DEF.map(n=>({id:'s_'+n.toLowerCase().replace(/[^a-zäöüß0-9]/g,''),name:n,color:shopPre(n)[1],kind:shopPre(n)[2],items:[]})),hist:{}}}
+function shopDefault(){return{v:2,lists:SHOP_DEF.map(n=>({id:shopId(n),name:n,color:shopPre(n)[1],kind:shopPre(n)[2],items:[]})),hist:{}}}
 var shopReady=true;
-function shopFix(){if(!S.shop||!S.shop.lists)S.shop=shopDefault();if(!S.shop.hist)S.shop.hist={}}
+function shopFix(){if(!S.shop||!S.shop.lists)S.shop=shopDefault();if(!S.shop.hist)S.shop.hist={};
+ if(S.shop.v!==2){S.shop.v=2;const oldIds=new Set(SHOP_OLD.filter(n=>!SHOP_DEF.includes(n)).map(shopId));S.shop.lists=S.shop.lists.filter(l=>!(oldIds.has(l.id)&&!l.items.length));
+  SHOP_DEF.forEach(n=>{if(!S.shop.lists.some(l=>l.id===shopId(n)))S.shop.lists.push(shopDefault().lists.find(l=>l.name===n))});
+  S.shop.lists.sort((a,b)=>{const ia=SHOP_DEF.indexOf(a.name),ib=SHOP_DEF.indexOf(b.name);return (ia<0?99:ia)-(ib<0?99:ib)})}}
 const shopList=id=>S.shop.lists.find(l=>l.id===id);
 function shopHTML(){shopFix();const l=ui.shopList&&shopList(ui.shopList);return l?shopListHTML(l):shopTilesHTML()}
 function shopTilesHTML(){const L=S.shop.lists;
