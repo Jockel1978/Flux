@@ -734,16 +734,21 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  case 'gsync-all':try{let cnt=0;for(const t of S.tasks.filter(x=>!x.done&&x.due)){await gPush(t);cnt++}const pl=await gPull();toast(cnt+' Aufgaben übertragen, '+pl+' Termine geladen');paintList()}catch(err){toast(err.message)}refreshModal();break;
  case 'settings':openSettings();break;
  case 'settings-cal':openSettings(true);break;
+ case 'shop-share':sheet(shareSheet);break;
+ case 'g-create':gCreate();break;
+ case 'g-leave':if(confirm('Gemeinsame Listen verlassen? Du behältst eine Kopie.'))gLeave();break;
+ case 'g-copy':{const l=location.origin+'/?join='+gid();try{await navigator.clipboard.writeText(l);toast('Link kopiert')}catch(e){toast(l)}break}
+ case 'g-share':{const l=location.origin+'/?join='+gid();if(navigator.share)navigator.share({title:'Flux Einkauf',text:'Komm in meine Einkaufslisten:',url:l}).catch(()=>{});else{try{await navigator.clipboard.writeText(l);toast('Link kopiert')}catch(e){toast(l)}}break}
  case 'shop-open':ui.shopList=id;renderCol();break;
  case 'shop-back':ui.shopList=null;renderCol();break;
  case 'shop-add':shopAdd(null,true);break;
  case 'shop-sug':shopAdd(v,false);break;
- case 'shop-tog':{const l=shopList(ui.shopList),i=l&&l.items.find(x=>x.id===id);if(i){i.done=!i.done;i.at=i.done?Date.now():0;save();renderSide();renderCol()}break}
- case 'shop-del':{const l=shopList(ui.shopList);if(l){l.items=l.items.filter(x=>x.id!==id);save();renderCol()}break}
- case 'shop-clear':{const l=shopList(ui.shopList);if(l){l.items=l.items.filter(x=>!x.done);save();renderCol()}break}
+ case 'shop-tog':{const l=shopList(ui.shopList),i=l&&l.items.find(x=>x.id===id);if(i){i.done=!i.done;i.at=i.done?Date.now():0;i.u=Date.now();gPutItem(l,i);save();renderSide();renderCol()}break}
+ case 'shop-del':{const l=shopList(ui.shopList);if(l){l.items=l.items.filter(x=>x.id!==id);gDelItem(id);save();renderCol()}break}
+ case 'shop-clear':{const l=shopList(ui.shopList);if(l){l.items.filter(x=>x.done).forEach(x=>gDelItem(x.id));l.items=l.items.filter(x=>!x.done);save();renderCol()}break}
  case 'shop-addlist':sheet(shopAddSheet);break;
  case 'shop-new':shopNewList(v);break;
- case 'shop-dellist':{const l=shopList(id);if(l&&confirm('Liste „'+l.name+'“ mit allen Artikeln löschen?')){S.shop.lists=S.shop.lists.filter(x=>x.id!==id);ui.shopList=null;save();renderCol()}break}
+ case 'shop-dellist':{const l=shopList(id);if(l&&confirm('Liste „'+l.name+'“ mit allen Artikeln löschen?')){l.items.forEach(x=>gDelItem(x.id));S.shop.lists=S.shop.lists.filter(x=>x.id!==id);ui.shopList=null;gPutLists();save();renderCol()}break}
  case 'acct':sheet(acctSheet);break;
  case 'g-login':fbDo(()=>FBX.google());break;
  case 'm-login':mailAuth(false);break;
@@ -1010,7 +1015,7 @@ function shopFix(){if(!S.shop||!S.shop.lists)S.shop=shopDefault();if(!S.shop.his
 const shopList=id=>S.shop.lists.find(l=>l.id===id);
 function shopHTML(){shopFix();const l=ui.shopList&&shopList(ui.shopList);return l?shopListHTML(l):shopTilesHTML()}
 function shopTilesHTML(){const L=S.shop.lists;
- return `<div class="col-in"><div class="head"><div><h1>Einkauf</h1><p class="sub">Eine Liste pro Markt</p></div><button class="btn sec2 sm" data-act="shop-addlist">${ic('plus')} Liste</button></div>
+ return `<div class="col-in"><div class="head"><div><h1>Einkauf</h1><p class="sub">Eine Liste pro Markt${gid()?' · geteilt':''}</p></div><div class="row2" style="flex:none"><button class="btn sec2 sm" data-act="shop-share">${ic('share')} ${gid()?'Geteilt':'Teilen'}</button><button class="btn sec2 sm" data-act="shop-addlist">${ic('plus')} Liste</button></div></div>
  <div class="shgrid">${L.map(l=>{const n=l.items.filter(i=>!i.done).length;return `<button class="shtile" data-act="shop-open" data-id="${l.id}"><span class="shlogo" style="--c:${l.color}">${esc(l.name.slice(0,2))}</span>${esc(l.name)}${n?`<em>${n}</em>`:''}</button>`}).join('')}</div></div>`}
 function shopSugs(l){const have=new Set(l.items.filter(i=>!i.done).map(i=>i.t.toLowerCase()));const kind=SUG[l.kind]?l.kind:'misc';
  const hist=Object.entries(S.shop.hist).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);const base=SUG[kind].map(x=>x.slice(x.indexOf(' ')+1));
@@ -1024,21 +1029,21 @@ function shopListHTML(l){const open=l.items.filter(i=>!i.done),done=l.items.filt
  <h3 class="shh">Vorschläge</h3><div class="shchips">${shopSugs(l).map(n=>`<button class="shchip" data-act="shop-sug" data-v="${esc(n)}">${shopEmoji(n)?shopEmoji(n)+' ':''}${esc(n)}</button>`).join('')}</div>
  ${done.length?`<h3 class="shh">Zuletzt gekauft <button class="shlink" data-act="shop-clear">Alle entfernen</button></h3><div class="card">${done.slice(0,40).map(row).join('')}</div>`:''}</div>`}
 function shopAdd(text,keepFocus){const l=shopList(ui.shopList);if(!l)return;const inp=$('#shopIn');const t=String(text!=null?text:inp?inp.value:'').trim();if(!t)return;
- const ex=l.items.find(i=>i.t.toLowerCase()===t.toLowerCase());if(ex){ex.done=false;ex.at=0}else l.items.push({id:uid(),t,done:false,at:0});
+ const ex=l.items.find(i=>i.t.toLowerCase()===t.toLowerCase());let it=ex;if(ex){ex.done=false;ex.at=0;ex.u=Date.now()}else{it={id:uid(),t,done:false,at:0,u:Date.now()};l.items.push(it)}gPutItem(l,it);
  S.shop.hist[t]=(S.shop.hist[t]||0)+1;save();renderSide();renderCol();if(keepFocus){const n=$('#shopIn');if(n)n.focus()}}
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='shopIn'){e.preventDefault();shopAdd(null,true)}});
 function shopAddSheet(){shopFix();const have=new Set(S.shop.lists.map(l=>l.name));const rest=SHOP_PRE.filter(p=>!have.has(p[0]));
  return sheetHead('Liste hinzufügen')+(rest.length?`<div class="shgrid" style="grid-template-columns:repeat(auto-fill,minmax(92px,1fr))">${rest.map(p=>`<button class="shtile" style="min-height:96px" data-act="shop-new" data-v="${esc(p[0])}"><span class="shlogo" style="--c:${p[1]};width:48px;height:48px;font-size:17px">${esc(p[0].slice(0,2))}</span>${esc(p[0])}</button>`).join('')}</div>`:'')+
  `<p class="hint" style="margin:16px 0 6px">Oder eigene Liste:</p><div class="row2"><input class="inp" id="shopNew" placeholder="z. B. Hornbach, Metzgerei Müller …"><button class="btn sm" data-act="shop-new" data-v="">Anlegen</button></div>`}
 function shopNewList(v){let name=v,color,kind='misc';if(v){const p=shopPre(v);color=p[1];kind=p[2]}else{name=(($('#shopNew')||{}).value||'').trim();if(!name)return;const cs=['#6366f1','#0ea5e9','#10b981','#f59e0b','#ec4899','#8b5cf6'];color=cs[S.shop.lists.length%cs.length]}
- const l={id:uid(),name,color,kind,items:[]};S.shop.lists.push(l);ui.shopList=l.id;save();closeModal();paint()}
+ const l={id:uid(),name,color,kind,items:[]};S.shop.lists.push(l);ui.shopList=l.id;gPutLists();save();closeModal();paint()}
 
 /* ============ Konto & Sync (Firebase Auth + Firestore) ============ */
 var fb={user:null,state:'off',msg:'',hold:false,ready:false,pushT:null,unM:null,unI:null,remoteImg:null,known:new Set(),last:null,busy:false};
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 const lsDel=k=>{try{localStorage.removeItem(k)}catch(e){}};
-const mainJSON=()=>{const o={...S};delete o.img;return JSON.stringify(o)};
+const mainJSON=()=>{const o={...S};delete o.img;if(o.shop&&o.shop.gid)o.shop={v:2,gid:o.shop.gid,gname:o.shop.gname,hist:o.shop.hist,lists:[]};return JSON.stringify(o)};
 function fbStatusText(){return fb.state==='err'?(fb.msg||'Fehler'):fb.state==='sync'?'synchronisiere …':fb.state==='ok'?'synchronisiert':'verbinde …'}
 function fbErr(e){const c=(e&&e.code)||'';const m={
  'auth/popup-blocked':'Popup wurde blockiert – bitte Popups für die Seite erlauben.','auth/popup-closed-by-user':'Anmeldung abgebrochen.','auth/cancelled-popup-request':'Anmeldung abgebrochen.',
@@ -1070,13 +1075,15 @@ function mergeS(l,r){const o=JSON.parse(JSON.stringify(r));['tasks','notes','eve
  if(l.shop&&l.shop.lists){if(!o.shop||!o.shop.lists)o.shop=shopDefault();l.shop.lists.forEach(x=>{const m=o.shop.lists.find(y=>y.id===x.id);if(!m)o.shop.lists.push(x);else{const ids=new Set(m.items.map(i=>i.id));x.items.forEach(i=>{if(!ids.has(i.id))m.items.push(i)})}})}
  o.shifts=o.shifts||defaults().shifts;o.shifts.days={...((l.shifts||{}).days||{}),...(o.shifts.days||{})};return o}
 function adopt(d,ts){const D=defaults(),keep={theme:S.set.theme,notify:S.set.notify},img=S.img;
+ if(d.shop&&(!d.shop.lists||!d.shop.lists.length)&&S.shop&&S.shop.lists&&(!d.shop.gid||d.shop.gid===S.shop.gid))d.shop={...d.shop,lists:S.shop.lists};
  S=Object.assign(D,d,{set:{...D.set,...(d.set||{}),hooks:{...D.set.hooks,...((d.set||{}).hooks||{})},...keep}});S.img=img;S._ts=ts;fixS();persist();applyTheme();
  if(ui.sel&&!getTask(ui.sel)&&!getNote(ui.sel))ui.sel=null;paint()}
 function adoptSafe(d,ts){const a=document.activeElement;if(a&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&!ui.modal){setTimeout(()=>{if(fb.user&&ts>(S._ts||0))adoptSafe(d,ts)},2500);return}adopt(d,ts)}
 function parseMain(d){try{return JSON.parse(d.json)}catch(e){return null}}
 function claimGuest(){lsSet('flux-claimed','1');if(KEY!==GKEY)lsDel(GKEY)}
 function takeGuest(){if(lsGet('flux-claimed'))return null;const r=lsGet(GKEY);if(!r)return null;try{const g=JSON.parse(r);return (g.tasks&&g.notes&&(g.tasks.length||g.notes.length))?g:null}catch(e){return null}}
-function onMain(data,meta){
+function onMain(d,m){onMain0(d,m);if(fb.user&&!fb.hold&&fb.ready)setTimeout(afterSync,0)}
+function onMain0(data,meta){
  if(!fb.user||meta.fromCache)return;
  if(!fb.ready){
   const guest=fb.hold?takeGuest():null;
@@ -1111,16 +1118,64 @@ function enter(u){
  try{fb.known=new Set(JSON.parse(lsGet('flux-known-'+u.uid)||'[]'))}catch(e){fb.known=new Set()}
  const nk='flux-u-'+u.uid;KEY=nk;lsSet('flux-last-uid',u.uid);
  if(lsGet(nk)){S=load();fixS();fb.hold=false}else{S=blankS();fixS();fb.hold=true}
- applyTheme();ui.sel=null;paint();
+ applyTheme();ui.sel=null;paint();if(!fb.hold)setTimeout(afterSync,0);
  fb.unM=FBX.watchMain(u.uid,onMain,e=>{fb.state='err';fb.msg=fbErr(e);statusUI()});
  fb.unI=FBX.watchImg(u.uid,onImg,e=>{fb.state='err';fb.msg=fbErr(e);statusUI()})}
 function leave(){
+ if(fb.gUn)fb.gUn();if(fb.gUnI)fb.gUnI();fb.gUn=fb.gUnI=null;fb.gAtt=null;fb.gReady=false;
  if(fb.unM)fb.unM();if(fb.unI)fb.unI();fb.unM=fb.unI=null;clearTimeout(fb.pushT);fb.pushT=null;
  fb.user=null;fb.ready=false;fb.hold=false;fb.remoteImg=null;fb.state='off';lsDel('flux-last-uid');KEY=GKEY;S=load();fixS();applyTheme();ui.sel=null;paint()}
+/* --- Gemeinsame Einkaufslisten (Gruppe in Firestore) --- */
+const gid=()=>S.shop&&S.shop.gid;
+const SHOP_DEF_IDS=new Set(SHOP_DEF.map(shopId));
+const gStrip=l=>({id:l.id,name:l.name,color:l.color,kind:l.kind||'misc'});
+function gRand(){const a=new Uint8Array(16);crypto.getRandomValues(a);return [...a].map(x=>'abcdefghijkmnpqrstuvwxyz23456789'[x%32]).join('')}
+function gErr(e){const c=(e&&e.code)||'';if(c==='permission-denied')toast('Keine Berechtigung für die gemeinsamen Listen – Firestore-Regeln prüfen.');else if(c!=='unavailable')toast(fbErr(e))}
+function gPutItem(l,i){const g=gid();if(g&&fb.user)FBX.putItem(g,i.id,{l:l.id,ln:l.name,t:i.t,done:!!i.done,at:i.at||0,u:i.u||Date.now()}).catch(gErr)}
+function gDelItem(id){const g=gid();if(g&&fb.user)FBX.delItem(g,id).catch(gErr)}
+function gPutLists(){const g=gid();if(g&&fb.user)FBX.putGroup(g,{lists:S.shop.lists.map(gStrip)}).catch(gErr)}
+function shopRender(){const i=$('#shopIn'),v=i?i.value:'',f=i&&document.activeElement===i;renderCol();if(i){const n=$('#shopIn');if(n){n.value=v;if(f)n.focus()}}}
+function ensureGroup(){const g=gid(),u=fb.user;
+ if(fb.gAtt&&(!u||fb.gAtt!==g)){if(fb.gUn)fb.gUn();if(fb.gUnI)fb.gUnI();fb.gUn=fb.gUnI=null;fb.gAtt=null;fb.gReady=false;fb.gMembers=0}
+ if(!u||!g||fb.gAtt===g)return;
+ fb.gAtt=g;fb.gReady=false;fb.gUn=FBX.watchGroup(g,onGroup,gErr);fb.gUnI=FBX.watchItems(g,onItems,gErr)}
+function onGroup(data,meta){const g=fb.gAtt;if(!g)return;
+ if(!data){if(!meta.fromCache){toast('Gemeinsame Listen nicht mehr verfügbar');S.shop.gid=null;save()}return}
+ fb.gMembers=(data.members||[]).length;let lists=data.lists||[];
+ if(!fb.gReady&&fb.gInit){fb.gInit=false;const have=new Set(lists.map(l=>l.id)),add=S.shop.lists.filter(l=>!have.has(l.id)&&(l.items.length||!SHOP_DEF_IDS.has(l.id)));
+  if(add.length){lists=[...lists,...add.map(gStrip)];FBX.putGroup(g,{lists}).catch(gErr)}
+  S.shop.lists.forEach(l=>l.items.forEach(i=>{i.u=i.u||Date.now();gPutItem(l,i)}))}
+ if(lists.length||fb.gReady||!S.shop.lists.length){const old=S.shop.lists;S.shop.lists=lists.map(m=>{const o=old.find(x=>x.id===m.id);return o?Object.assign(o,m):{...m,items:[]}})}
+ fb.gReady=true;persist();if(viewType()==='shop')shopRender();if(ui.sheet===shareSheet)sheet(shareSheet)}
+function onItems(ch,meta){if(!fb.gAtt)return;
+ ch.forEach(c=>{const d=c.data||{};
+  if(c.type==='removed'){S.shop.lists.forEach(l=>{l.items=l.items.filter(i=>i.id!==c.id)});return}
+  let l=S.shop.lists.find(x=>x.id===d.l);if(!l){l={id:d.l,name:d.ln||d.l,color:'#64748b',kind:'misc',items:[]};S.shop.lists.push(l)}
+  const ex=S.shop.lists.map(x=>x.items.find(i=>i.id===c.id)).find(Boolean);
+  if(ex){if((ex.u||0)>(d.u||0))return;ex.t=d.t;ex.done=!!d.done;ex.at=d.at||0;ex.u=d.u||0}else l.items.push({id:c.id,t:d.t,done:!!d.done,at:d.at||0,u:d.u||0})});
+ persist();if(viewType()==='shop')shopRender()}
+function shareSheet(){const g=gid(),h=sheetHead('Gemeinsam einkaufen');
+ if(!window.FBX)return h+'<p class="hint">Nicht verfügbar (offline?).</p>';
+ if(!fb.user)return h+'<p class="hint">Zum Teilen musst du angemeldet sein.</p><div class="row2"><button class="btn sm" data-act="acct">Anmelden</button></div>';
+ if(!g)return h+'<p class="hint">Teile <b>alle Einkaufslisten</b> mit einer zweiten Person, z. B. Peggy. Beide sehen und ändern dieselben Listen, Haken erscheinen sofort auf dem anderen Gerät. Alles andere (Aufgaben, Notizen, Dienstplan) bleibt privat.</p><div class="row2"><button class="btn sm" data-act="g-create">Gemeinsame Listen starten</button></div>'+(fb.msg?`<p class="hint" style="color:#ef4444">${esc(fb.msg)}</p>`:'');
+ const link=location.origin+'/?join='+g;
+ return h+`<p class="hint">Die Listen werden geteilt (${fb.gMembers||1} ${(fb.gMembers||1)===1?'Person':'Personen'}). Schick der zweiten Person diesen Einladungslink. Sie öffnet ihn, meldet sich an und ist dabei.</p><div class="code" style="word-break:break-all">${esc(link)}</div>
+ <div class="row2"><button class="btn sm" data-act="g-copy">${ic('copy')} Link kopieren</button><button class="btn sec2 sm" data-act="g-share">${ic('share')} Teilen …</button></div>
+ <p class="hint" style="margin-top:14px">Wer den Link kennt, kann beitreten – gib ihn nur weiter, wenn du das willst.</p>
+ <div class="row2"><button class="btn danger sm" data-act="g-leave">Gruppe verlassen</button></div>`}
+async function gCreate(){const u=fb.user;if(!u)return;const g=gRand();
+ try{await FBX.createGroup(g,{members:[u.uid],name:'Einkauf',lists:S.shop.lists.map(gStrip),upd:Date.now()});S.shop.gid=g;fb.gInit=true;save();ensureGroup();sheet(shareSheet);toast('Gemeinsame Listen gestartet')}catch(e){fb.msg=fbErr(e);sheet(shareSheet)}}
+async function gLeave(){const g=gid(),u=fb.user;if(!g||!u)return;try{await FBX.leaveGroup(g,u.uid)}catch(e){}S.shop.gid=null;ensureGroup();save();closeModal();paint();toast('Gruppe verlassen – Listen bleiben als Kopie bei dir')}
+function checkJoin(){const g=lsGet('flux-join');if(!g||!fb.user||!fb.ready||fb.hold)return;lsDel('flux-join');if(gid()===g)return;
+ if(!confirm('Einladung zu gemeinsamen Einkaufslisten annehmen?'+(gid()?'\n\nDu wechselst damit in die neue Gruppe.':'')))return;
+ FBX.joinGroup(g,fb.user.uid).then(()=>{S.shop.gid=g;fb.gInit=true;save();ensureGroup();nav('shop');toast('Dabei! Einkaufslisten werden jetzt geteilt')}).catch(()=>toast('Einladung ungültig'))}
+function afterSync(){if(!fb.user)return;ensureGroup();checkJoin()}
+try{const q=new URLSearchParams(location.search),j=q.get('join');if(j){lsSet('flux-join',j.replace(/[^a-z0-9]/gi,''));q.delete('join');history.replaceState(null,'',location.pathname+(q.toString()?'?'+q:'')+location.hash)}}catch(e){}
+
 function fbBoot(){const go=()=>{FBX.onUser(u=>{const had=!!fb.user;
   if(u){if(fb.user&&fb.user.uid===u.uid){fb.user=u;return}
    enter(u);if(ui.sheet===acctSheet){closeModal();toast('Angemeldet')}}
-  else if(had||KEY!==GKEY){leave();if(had)toast('Abgemeldet')}
+  else{if(had||KEY!==GKEY){leave();if(had)toast('Abgemeldet')}if(lsGet('flux-join')){fb.msg='Melde dich an, um der Einladung zu den gemeinsamen Einkaufslisten zu folgen.';setTimeout(()=>sheet(acctSheet),400)}}
   })};
  if(window.FBX)go();else addEventListener('fbx-ready',go,{once:true})}
 
