@@ -97,6 +97,7 @@ h1{margin:0;font-size:30px;letter-spacing:-.03em;line-height:1.1}
 .inp{width:100%;border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:9px 12px;outline:0;min-height:40px}
 .inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 textarea.inp{resize:vertical;min-height:84px;line-height:1.5}
+.ttabs{max-width:460px;margin-bottom:16px}.ttabs small{font-size:11px;opacity:.7;margin-left:3px}
 .seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
 .seg button{flex:1;padding:7px 8px;border-radius:7px;font-size:13px;font-weight:600;color:var(--muted);min-height:34px}
 .seg button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
@@ -253,14 +254,18 @@ a.btn{text-decoration:none}
 @media (max-width:900px){.board{overflow-x:auto;grid-template-columns:repeat(3,minmax(210px,1fr))}}
 /* responsive */
 @media (max-width:1180px){
-  :root{--side:76px}
-  .side .label,.side .sec,.side em,.side kbd{display:none}
-  .brand{justify-content:center;padding:4px 0 14px}
-  .nav{justify-content:center;padding:11px 0}
+  :root{--side:206px}
+  .side kbd{display:none}
   .main:not(.v-notes) .detail.show{position:absolute;right:0;top:0;bottom:0;width:min(430px,100%);z-index:20;box-shadow:-20px 0 50px rgba(0,0,0,.18)}
   .ed-wrap.split{flex-direction:column}.ed-wrap.split .pv{border-left:0;border-top:1px solid var(--line)}
 }
 @media (max-width:820px){
+  :root{--side:88px}
+  .side{padding:14px 6px}
+  .side .sec,.side em,.side .nav.tag,.side .nav.area{display:none}
+  .brand{justify-content:center;padding:4px 0 12px}.brand .label{display:none}
+  .nav{flex-direction:column;justify-content:center;gap:3px;padding:8px 2px;min-height:58px;text-align:center}
+  .nav .label{font-size:11.5px;font-weight:600;line-height:1.1}
   .col{padding:20px 16px 60px}
   .main.v-notes .col{flex-basis:250px}
   .ed-top,.ed-foot{padding-left:16px;padding-right:16px}.ed-wrap textarea,.ed-wrap .pv{padding-left:16px;padding-right:16px}
@@ -270,7 +275,7 @@ a.btn{text-decoration:none}
   #app{grid-template-columns:1fr;grid-template-rows:1fr 62px}
   .side{order:2;flex-direction:row;padding:6px;border-right:0;border-top:1px solid var(--line);overflow-x:auto;align-items:center}
   .side .brand,.side .grow,.side .dot,.side .nav.tag,.side .nav.area{display:none}
-  .nav{width:auto;flex:1;min-width:52px}
+  .nav{width:auto;flex:1;min-width:0;padding:7px 0}.nav .label{font-size:10px}.side .acctb{display:none}
   .main{height:auto;min-height:0}
   .main.v-notes .col{flex:1;border:0}
   .main.v-notes .detail.show,.main .detail.show{position:fixed;inset:0;width:auto;z-index:30;display:flex;flex-direction:column}
@@ -490,12 +495,12 @@ function renderSide(){const t=today(),op=openT();
  const tags=Object.entries(tagCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
  $('#side').innerHTML=`<div class="brand"><div class="logo">${ic('bolt')}</div><b class="label">Flux</b></div>
  <button class="nav ${ui.view==='search'?'on':''}" data-act="nav" data-v="search" title="Suchen">${ic('search')}<span class="label">Suchen</span><kbd>⌘K</kbd></button>
- ${nav('inbox','inbox','Eingang',cnt.inbox)}${nav('today','sun','Heute',cnt.today)}${nav('upcoming','upc','Anstehend')}${nav('board','board','Board')}${nav('calendar','cal','Kalender')}${nav('shifts','rota','Dienstplan')}${nav('notes','note','Notizen',S.notes.length||'')}
+ <button class="nav ${TASKMAIN.includes(ui.view)?'on':''}" data-act="nav" data-v="${ui.lastTask||'today'}" title="Aufgaben">${ic('sun')}<span class="label">Aufgaben</span>${cnt.today?`<em>${cnt.today}</em>`:''}</button>${nav('notes','note','Notizen')}${nav('calendar','cal','Kalender')}${nav('shifts','rota','Dienstplan')}
  <div class="sec">Bereiche</div>
  ${S.areas.map(a=>`<button class="nav area ${ui.view==='area:'+a.id?'on':''}" data-act="nav" data-v="area:${a.id}" title="${esc(a.name)}"><span class="dot" style="--c:${a.color}"></span><span class="label">${esc(a.name)}</span><em>${op.filter(x=>x.area===a.id).length||''}</em></button>`).join('')}
  ${tags.length?'<div class="sec">Tags</div>'+tags.map(([g,c])=>`<button class="nav tag ${ui.view==='tag:'+g?'on':''}" data-act="nav" data-v="tag:${esc(g)}" title="#${esc(g)}">${ic('tag')}<span class="label">${esc(g)}</span><em>${c}</em></button>`).join(''):''}
  <div class="grow"></div>
- <button class="nav" data-act="acct" title="Konto &amp; Sync">${ic('user')}<span class="label">${fb.user?esc((fb.user.displayName||fb.user.email||'Konto').split(/[ @]/)[0]):'Anmelden'}</span>${fb.user?`<em style="color:${fb.state==='err'?'#ef4444':fb.state==='sync'?'#f59e0b':'#10b981'};background:none">●</em>`:''}</button>
+ <button class="nav acctb" data-act="acct" title="Konto &amp; Sync">${ic('user')}<span class="label">${fb.user?esc((fb.user.displayName||fb.user.email||'Konto').split(/[ @]/)[0]):'Anmelden'}</span>${fb.user?`<em style="color:${fb.state==='err'?'#ef4444':fb.state==='sync'?'#f59e0b':'#10b981'};background:none">●</em>`:''}</button>
  <button class="nav" data-act="settings" title="Einstellungen">${ic('set')}<span class="label">Einstellungen</span></button>`}
 
 /* ============ Rendering: task lists ============ */
@@ -521,7 +526,7 @@ function renderCol(){const col=$('#col'),keep=col.scrollTop,vt=viewType();
  const wb=$('#wkbody');if(wb){wb.scrollTop=ui.wkScroll==null?Math.max(0,(new Date().getHours()-1)*HH):ui.wkScroll;wb.addEventListener('scroll',()=>{ui.wkScroll=wb.scrollTop})}}
 function tasksHTML(){const list=filt(false),dn=filt(true),gs=groupsOf(list),t=today();
  const sub=ui.view==='today'?longDate(t):ui.view==='inbox'?'Unsortiertes landet hier':'';
- return `<div class="col-in"><div class="head"><div><h1>${esc(viewTitle())}</h1><p class="sub">${sub?sub+' · ':''}${list.length} offen</p></div></div>
+ return `<div class="col-in">${taskTabs()}<div class="head"><div><h1>${esc(viewTitle())}</h1><p class="sub">${sub?sub+' · ':''}${list.length} offen</p></div></div>
  ${qaForm()}
  ${gs.length?gs.map(g=>`<div class="grp"><h3 class="${g.cls||''}">${esc(g.label)}${g.label?`<span>${g.items.length}</span>`:''}</h3><div class="card">${g.items.map(taskRow).join('')}</div></div>`).join(''):`<div class="empty"><div class="big">${ic('task')}</div><b>Alles erledigt</b><p>Nichts offen – genieß den Moment oder leg oben etwas Neues an.</p></div>`}
  ${dn.length?`<button class="more" data-act="toggle-done">${ic(ui.doneOpen?'down':'right')} Erledigt (${dn.length})</button>${ui.doneOpen?`<div class="card">${dn.slice(0,30).map(taskRow).join('')}</div>`:''}`:''}</div>`}
@@ -631,7 +636,10 @@ function closeModal(){ui.modal=false;ui.sheet=null;$('#modal').innerHTML=''}
 const refreshModal=()=>{const b=$('#mbox'),k=b?b.scrollTop:0;$('#modal').innerHTML=settingsHTML();const nb=$('#mbox');if(nb)nb.scrollTop=k};
 
 /* ============ Actions ============ */
-function nav(v){ui.view=v;ui.sel=null;ui.slash=null;if(v==='calendar')ui.sel={type:'day',id:ui.calSel};if(v==='notes'&&innerWidth>640){const n=S.notes.slice().sort((a,b)=>(b.pinned-a.pinned)||b.updated-a.updated)[0];if(n)ui.sel={type:'note',id:n.id}}paint();if(v==='search')setTimeout(()=>{const i=$('#sq');i&&i.focus()},30)}
+const TASKMAIN=['inbox','today','upcoming','board'];
+function taskTabs(){const op=openT(),t=today(),c={inbox:op.filter(x=>!x.due&&!x.area).length,today:op.filter(x=>x.due&&x.due<=t).length};
+ return `<div class="seg ttabs">${[['today','Heute'],['upcoming','Anstehend'],['inbox','Eingang'],['board','Board']].map(([v,l])=>`<button class="${ui.view===v?'on':''}" data-act="nav" data-v="${v}">${l}${c[v]?`<small>${c[v]}</small>`:''}</button>`).join('')}</div>`}
+function nav(v){if(TASKMAIN.includes(v)||v.startsWith('area:')||v.startsWith('tag:'))ui.lastTask=v;ui.view=v;ui.sel=null;ui.slash=null;if(v==='calendar')ui.sel={type:'day',id:ui.calSel};if(v==='notes'&&innerWidth>640){const n=S.notes.slice().sort((a,b)=>(b.pinned-a.pinned)||b.updated-a.updated)[0];if(n)ui.sel={type:'note',id:n.id}}paint();if(v==='search')setTimeout(()=>{const i=$('#sq');i&&i.focus()},30)}
 function newNote(title,body,areaId){const n={id:uid(),title:title||'',body:body||'',parent:null,area:areaId!==undefined?areaId:(ui.view.startsWith('area:')?ui.view.slice(5):null),tags:[],pinned:false,created:Date.now(),updated:Date.now()};S.notes.push(n);save();emit('note.created',n);return n}
 function openNote(id){if(ui.view!=='notes')ui.view='notes';ui.sel={type:'note',id};paint()}
 function wikilink(title){let n=S.notes.find(x=>x.title.toLowerCase()===title.toLowerCase());if(!n){n=newNote(title,'# '+title+'\n\n');toast('Neue Notiz „'+title+'“ angelegt')}openNote(n.id)}
@@ -798,7 +806,7 @@ function boardCard(t){const a=area(t.area),late=t.due&&t.due<today()&&!t.done;co
 function boardHTML(){const f=ui.boardArea,base=S.tasks.filter(t=>!f||t.area===f);
  const cols=[['todo','Offen',base.filter(t=>!t.done&&(t.status||'todo')==='todo').sort((a,b)=>a.prio-b.prio||b.created-a.created)],['doing','In Arbeit',base.filter(t=>!t.done&&t.status==='doing').sort((a,b)=>a.prio-b.prio||b.created-a.created)],['done','Erledigt',base.filter(t=>t.done).sort((a,b)=>b.doneAt-a.doneAt).slice(0,20)]];
  const chips=[['','Alle'],...S.areas.map(a=>[a.id,a.name])];
- return `<div class="col-in"><div class="head"><div><h1>Board</h1><p class="sub">Karte gedrückt halten und in eine Spalte ziehen</p></div><div class="seg" style="min-width:240px">${chips.map(([v,l])=>`<button class="${f===v?'on':''}" data-act="board-area" data-v="${v}">${esc(l)}</button>`).join('')}</div></div>${qaForm()}
+ return `<div class="col-in">${taskTabs()}<div class="head"><div><h1>Board</h1><p class="sub">Karte gedrückt halten und in eine Spalte ziehen</p></div><div class="seg" style="min-width:240px">${chips.map(([v,l])=>`<button class="${f===v?'on':''}" data-act="board-area" data-v="${v}">${esc(l)}</button>`).join('')}</div></div>${qaForm()}
  <div class="board">${cols.map(([k,l,items])=>`<div class="bcol" data-drop="col" data-status="${k}"><h3>${l}<span>${items.length}</span></h3><div class="bcards">${items.map(boardCard).join('')||'<div class="bempty">leer</div>'}</div></div>`).join('')}</div></div>`}
 function dropTaskToCol(id,status){const t=getTask(id);if(!t)return;
  if(status==='done'){if(!t.done)toggleTask(id)}else{if(t.done){t.done=false;t.doneAt=0}t.status=status;save()}
