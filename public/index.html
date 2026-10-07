@@ -818,6 +818,7 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  case 'dash-note':nav('notes');ui.sel={type:'note',id};paint();break;
  case 'set-look':S.set.look=v;save();applyTheme();refreshModal();paint();break;
  case 'wx-set':{const n=(($('#wxCity')||{}).value||'').trim();if(n){S.set.weather={name:n};lsDel('flux-wx');save();toast('Wetter-Ort: '+n)}break}
+ case 'wx-reload':wxPaint(null,'lädt …');wxLoad(true);break;
  case 'kiosk':setKiosk(!ui.kiosk);break;
  case 'dash-day':ui.calSel=v;ui.calDate=v;nav('calendar');break;
  case 'dash-task':nav('today');ui.sel={type:'task',id};paint();break;
@@ -1117,16 +1118,18 @@ const dGreet=()=>{const h=new Date().getHours();return h<5?'Nachtschicht?':h<11?
 const dClock=()=>{const n=new Date();return pad(n.getHours())+':'+pad(n.getMinutes())};
 const noteSnip=n=>{const l=String(n.body||'').split('\n').map(x=>x.replace(/^[#>\-*\s\[\]x|]+/,'').replace(/[*_`]/g,'').trim()).filter(x=>x&&x!==n.title);return (l[0]||'').slice(0,70)};
 const WXI=c=>c===0?['☀️','klar']:c<=2?['⛅','wolkig']:c===3?['☁️','bedeckt']:c<=48?['🌫️','Nebel']:c<=57?['🌦️','Niesel']:c<=67?['🌧️','Regen']:c<=77?['🌨️','Schnee']:c<=82?['🌦️','Schauer']:c<=86?['🌨️','Schneeschauer']:['⛈️','Gewitter'];
-function wxHTML(d,err){if(!d)return `<p class="dempty">${esc(err||'lädt …')}</p>`;const c=d.cur,w=WXI(c.weather_code),dn=['So','Mo','Di','Mi','Do','Fr','Sa'];
+function wxHTML(d,err){if(!d)return `<p class="dempty" data-act="wx-reload" style="cursor:pointer">${esc(err||'lädt …')}</p>`;const c=d.cur,w=WXI(c.weather_code),dn=['So','Mo','Di','Mi','Do','Fr','Sa'];
  return `<div class="dwx"><div class="dwt"><span>${w[0]}</span><b>${Math.round(c.temperature_2m)}°</b></div><div class="dwm"><b>${w[1]}</b><small>gefühlt ${Math.round(c.apparent_temperature)}° · Wind ${Math.round(c.wind_speed_10m)} km/h</small></div></div>
  <div class="dwd">${d.daily.time.slice(1,4).map((t,i)=>`<div><span>${dn[pd(t).getDay()]}</span><i>${WXI(d.daily.weather_code[i+1])[0]}</i><b>${Math.round(d.daily.temperature_2m_max[i+1])}°</b><small>${Math.round(d.daily.temperature_2m_min[i+1])}°</small></div>`).join('')}</div>`}
 function wxCached(){setTimeout(wxLoad,0);try{const c=JSON.parse(lsGet('flux-wx')||'null');if(c&&c.n===((S.set.weather||{}).name||'Großlohra'))return wxHTML(c.d)}catch(e){}return wxHTML(null)}
 function wxPaint(d,err){const e=$('#dkWx');if(e)e.innerHTML=wxHTML(d,err)}
 async function wxLoad(force){const W=S.set.weather||(S.set.weather={name:'Großlohra'}),n=W.name||'Großlohra';
  try{const c=JSON.parse(lsGet('flux-wx')||'null');if(c&&!force&&c.n===n&&Date.now()-c.t<1800000)return}catch(e){}
- try{if(!W.lat){const g=await (await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(n)+'&count=1&language=de')).json(),r=g.results&&g.results[0];if(!r){wxPaint(null,'Ort nicht gefunden – in den Einstellungen ändern');return}W.lat=r.latitude;W.lon=r.longitude;save()}
-  const j=await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${W.lat}&longitude=${W.lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe%2FBerlin&forecast_days=4`)).json();
-  const d={cur:j.current,daily:j.daily};lsSet('flux-wx',JSON.stringify({n,t:Date.now(),d}));wxPaint(d)}catch(e){if(!lsGet('flux-wx'))wxPaint(null,'Wetter nicht erreichbar')}}
+ try{if(!W.lat){const g=await (await wxF('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(n)+'&count=1&language=de')).json(),r=g.results&&g.results[0];if(!r){wxPaint(null,'Ort nicht gefunden – in den Einstellungen ändern');return}W.lat=r.latitude;W.lon=r.longitude;save()}
+  const j=await (await wxF(`https://api.open-meteo.com/v1/forecast?latitude=${W.lat}&longitude=${W.lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe%2FBerlin&forecast_days=4`)).json();
+  const d={cur:j.current,daily:j.daily};lsSet('flux-wx',JSON.stringify({n,t:Date.now(),d}));wxPaint(d)}catch(e){if(!lsGet('flux-wx'))wxPaint(null,'Wetter nicht erreichbar ('+(e&&e.message||e)+') – tippen zum Neuladen')}}
+async function wxF(u){const r=await fetch(u,{signal:AbortSignal.timeout(10000)});if(!r.ok)throw new Error('HTTP '+r.status);return r}
+addEventListener('online',()=>wxLoad(true));
 function dashHTML(){shopFix();const t=today(),open=S.tasks.filter(x=>!x.done),todayOpen=open.filter(x=>x.due===t),over=open.filter(x=>x.due&&x.due<t),doneT=S.tasks.filter(x=>x.done&&x.due===t).length;
  const evs=[];const m=calMap(t,addDays(t,7));Object.keys(m).sort().forEach(d=>m[d].ev.forEach(e=>evs.push({d,e})));
  evs.sort((a,b)=>a.d.localeCompare(b.d)||((a.e.allDay?'':a.e.time)||'').localeCompare((b.e.allDay?'':b.e.time)||''));
