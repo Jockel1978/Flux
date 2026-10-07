@@ -581,12 +581,12 @@ function renderSide(){const t=today(),op=openT();
  const tags=Object.entries(tagCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
  $('#side').innerHTML=`<div class="brand"><div class="logo">${ic('bolt')}</div><b class="label">Flux</b></div>
  ${nav('dash','dash','Übersicht')}<button class="nav ${TASKMAIN.includes(ui.view)?'on':''}" data-act="nav" data-v="${ui.lastTask||'today'}" title="Aufgaben">${ic('sun')}<span class="label">Aufgaben</span>${cnt.today?`<em>${cnt.today}</em>`:''}</button>${nav('notes','note','Notizen')}${nav('calendar','cal','Kalender')}${nav('shifts','rota','Dienstplan')}${nav('shop','cart','Einkauf')}
+  <button class="nav acctb" data-act="acct" title="Konto &amp; Sync">${ic('user')}<span class="label">${fb.user?esc((fb.user.displayName||fb.user.email||'Konto').split(/[ @]/)[0]):'Anmelden'}</span>${fb.user?`<em style="color:${fb.state==='err'?'#ef4444':fb.state==='sync'?'#f59e0b':'#10b981'};background:none">●</em>`:''}</button>
+ <button class="nav" data-act="settings" title="Einstellungen">${ic('set')}<span class="label">Einstellungen</span></button>
  <div class="sec">Bereiche</div>
  ${S.areas.map(a=>`<button class="nav area ${ui.view==='area:'+a.id?'on':''}" data-act="nav" data-v="area:${a.id}" title="${esc(a.name)}"><span class="dot" style="--c:${a.color}"></span><span class="label">${esc(a.name)}</span><em>${op.filter(x=>x.area===a.id).length||''}</em></button>`).join('')}
  ${tags.length?'<div class="sec">Tags</div>'+tags.map(([g,c])=>`<button class="nav tag ${ui.view==='tag:'+g?'on':''}" data-act="nav" data-v="tag:${esc(g)}" title="#${esc(g)}">${ic('tag')}<span class="label">${esc(g)}</span><em>${c}</em></button>`).join(''):''}
- <div class="grow"></div>
- <button class="nav acctb" data-act="acct" title="Konto &amp; Sync">${ic('user')}<span class="label">${fb.user?esc((fb.user.displayName||fb.user.email||'Konto').split(/[ @]/)[0]):'Anmelden'}</span>${fb.user?`<em style="color:${fb.state==='err'?'#ef4444':fb.state==='sync'?'#f59e0b':'#10b981'};background:none">●</em>`:''}</button>
- <button class="nav" data-act="settings" title="Einstellungen">${ic('set')}<span class="label">Einstellungen</span></button>`}
+`}
 
 /* ============ Rendering: task lists ============ */
 const TITLES={inbox:'Eingang',today:'Heute',upcoming:'Anstehend'};
