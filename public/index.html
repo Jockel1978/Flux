@@ -19,6 +19,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:15px/
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none}
 svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+html,body{overflow:hidden;overscroll-behavior:none;position:fixed;inset:0;width:100%}
+.col,.side,.detail,.modal{overscroll-behavior:contain}
 #app{display:grid;grid-template-columns:var(--side) 1fr;height:100dvh;overflow:hidden}
 /* sidebar */
 .side{background:var(--panel);border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:2px;overflow:auto}
