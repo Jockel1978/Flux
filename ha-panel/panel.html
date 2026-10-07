@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f1114">
-<title>Wandpanel</title>
+<title>HA Wandpanel</title>
 <style>
 :root{--am:#ffb400;--or:#ff6a1a;--mt:#8a8f98;--tx:#ece9e1;--bg:#0f1114;--ok:#4ade80;--er:#f43f5e}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
@@ -85,7 +85,7 @@ input[type=range]{width:100%;accent-color:var(--am);height:28px}
 
 <div class="ov" id="ovSet"><div class="panel box">
   <h3>Verbindung</h3>
-  <label>Home-Assistant-Adresse<input type="url" id="cUrl" placeholder="http://homeassistant.local:8123" autocapitalize="off" autocomplete="off"></label>
+  <label>Home-Assistant-Adresse<input type="url" id="cUrl" placeholder="http://homeassistant.local:8123  (oder: demo)" autocapitalize="off" autocomplete="off"></label>
   <label>Langlebiges Zugangs-Token<input type="password" id="cTok" placeholder="In Home Assistant: Profil → Sicherheit → Langlebige Zugangs-Tokens" autocapitalize="off" autocomplete="off"></label>
   <label>Bildschirm nachts abdunkeln (Uhrzeit von – bis, leer = aus)
     <span style="display:flex;gap:8px"><input type="text" id="cDimA" placeholder="22:00" style="flex:1"><input type="text" id="cDimB" placeholder="06:00" style="flex:1"></span></label>
@@ -115,8 +115,26 @@ let states={},ws=null,wsId=0,backoff=1000,timer=null,editing=false,pending={},st
 /* ---------- Verbindung ---------- */
 function setStatus(s,t){status=s;$('#led').className='led '+(s==='ok'?'ok':s==='sy'?'sy':s==='er'?'er':'');$('#stx').textContent=t}
 function wsUrl(){let u=cfg.url.trim().replace(/\/+$/,'');if(!/^https?:\/\//.test(u))u='http://'+u;return u.replace(/^http/,'ws')+'/api/websocket'}
+const DEMO=[
+ {entity_id:'light.wohnzimmer',state:'on',attributes:{friendly_name:'Wohnzimmer Decke',brightness:128}},
+ {entity_id:'light.flur',state:'off',attributes:{friendly_name:'Flur',brightness:200}},
+ {entity_id:'switch.kaffee',state:'off',attributes:{friendly_name:'Kaffeemaschine'}},
+ {entity_id:'cover.wz_rolladen',state:'open',attributes:{friendly_name:'Wohnzimmer Rolladen',current_position:70}},
+ {entity_id:'climate.bad',state:'heat',attributes:{friendly_name:'Bad Heizung',temperature:21,current_temperature:19.5}},
+ {entity_id:'sensor.balkon_leistung',state:'312.4',attributes:{friendly_name:'Balkonkraftwerk',unit_of_measurement:'W'}},
+ {entity_id:'sensor.temp_aussen',state:'11.8',attributes:{friendly_name:'Außentemperatur',unit_of_measurement:'°C'}},
+ {entity_id:'scene.abend',state:'unknown',attributes:{friendly_name:'Abend'}}];
+let demo=false;
+function demoCall(d,sv,data){const s=states[data.entity_id];if(!s)return;const a=s.attributes;
+  if(sv==='toggle')s.state=s.state==='on'?'off':'on';
+  else if(sv==='turn_on'&&data.brightness_pct){s.state='on';a.brightness=Math.round(data.brightness_pct*2.55)}
+  else if(sv==='open_cover'){a.current_position=100;s.state='open'}else if(sv==='close_cover'){a.current_position=0;s.state='closed'}
+  else if(sv==='set_temperature')a.temperature=data.temperature;
+  render()}
 function connect(){
-  clearTimeout(timer);if(ws){try{ws.onclose=null;ws.close()}catch(e){}ws=null}
+  clearTimeout(timer);demo=false;
+  if(cfg.url.trim().toLowerCase()==='demo'){if(ws){try{ws.onclose=null;ws.close()}catch(e){}ws=null}
+    demo=true;states={};JSON.parse(JSON.stringify(DEMO)).forEach(s=>states[s.entity_id]=s);setStatus('ok','DEMO-MODUS');if(!cfg.tiles.length)cfg.tiles=DEMO.slice(0,6).map(s=>s.entity_id);render();return}if(ws){try{ws.onclose=null;ws.close()}catch(e){}ws=null}
   if(!cfg.url||!cfg.token){setStatus('off','NICHT EINGERICHTET');return}
   setStatus('sy','VERBINDE …');
   let w;try{w=new WebSocket(wsUrl())}catch(e){setStatus('er','ADRESSE UNGÜLTIG');return}
@@ -135,7 +153,7 @@ function connect(){
   w.onerror=()=>{};
 }
 function send(o,cb){if(!ws||ws.readyState!==1)return;o.id=++wsId;if(cb)pending[o.id]=cb;ws.send(JSON.stringify(o))}
-function call(domain,service,data){send({type:'call_service',domain,service,service_data:data})}
+function call(domain,service,data){if(demo)return demoCall(domain,service,data);send({type:'call_service',domain,service,service_data:data})}
 
 /* ---------- Kacheln ---------- */
 const dom=id=>id.split('.')[0];
