@@ -117,7 +117,7 @@ textarea.inp{resize:vertical;min-height:84px;line-height:1.5}
 .main.v-dash .col{padding:16px}.main.v-dash .col-in{max-width:none}
 body.kiosk #side{display:none}body.kiosk #app{grid-template-columns:1fr;grid-template-rows:1fr}
 .dash{--am:#ffb400;--or:#ff6a1a;--mt:#8a8f98;--tx:#ece9e1;background:#0f1114;color:var(--tx);border-radius:22px;padding:14px;border:1px solid #23272d;box-shadow:0 10px 30px rgba(0,0,0,.28)}
-.dhaz{height:10px;border-radius:5px;margin-bottom:14px;background:repeating-linear-gradient(-45deg,var(--am) 0 12px,#17191d 12px 24px);opacity:.9}
+.dhaz{display:none}
 .dgrid{display:grid;gap:12px;grid-template-columns:repeat(12,minmax(0,1fr))}
 .dp{grid-column:span 4;min-width:0;position:relative;background:linear-gradient(180deg,#252930,#1b1e23);border:1px solid #333840;border-radius:14px;padding:16px 16px 14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 6px 16px rgba(0,0,0,.4)}
 .dp::before,.dp::after{content:'';position:absolute;top:8px;width:6px;height:6px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#7b818b,#2b2f36)}
@@ -153,6 +153,32 @@ body.kiosk #side{display:none}body.kiosk #app{grid-template-columns:1fr;grid-tem
 .dash .qa{background:#15181c;border-color:#2d3238;box-shadow:none;color:var(--tx)}.dash .qa input{color:var(--tx)}
 @media (max-width:1180px){.dp{grid-column:span 6}.dp.w6{grid-column:span 6}}
 @media (max-width:820px){.dp,.dp.w6{grid-column:span 12}.main.v-dash .col{padding:10px}.dtop{padding:12px 16px}}
+.dstack .dp{grid-column:auto}
+.dstack{grid-column:span 6;display:grid;gap:12px;align-content:start;min-width:0}
+.dwx{display:flex;align-items:center;gap:16px}.dwt{display:flex;align-items:center;gap:10px}.dwt span{font-size:42px;line-height:1}.dwt b{font:700 40px/1 ui-monospace,monospace;color:var(--am)}
+.dwm b{display:block;font-size:16px;text-transform:capitalize}.dwm small{color:var(--mt);font-size:12.5px}
+.dwd{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.dwd div{background:#15181c;border:1px solid #2d3238;border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;gap:2px}
+.dwd span{font:600 10px ui-monospace,monospace;letter-spacing:.14em;color:var(--mt)}.dwd i{font-style:normal;font-size:22px}.dwd b{font:700 14px ui-monospace,monospace}.dwd small{color:var(--mt);font:12px ui-monospace,monospace}
+:root[data-look=industrial]{--bg:#0f1114;--panel:#1b1e23;--panel2:#15181c;--text:#ece9e1;--muted:#8a8f98;--line:#2f343c;--accent:#ffb400;--accent-soft:rgba(255,180,0,.13);--danger:#ff5a4a;--ok:#4ade80;--p1:#ff5a4a;--p2:#ff8a1a;--p3:#4ea1ff;--p4:#6b717b;--shadow:inset 0 1px 0 rgba(255,255,255,.05),0 6px 16px rgba(0,0,0,.4);--r:12px;color-scheme:dark}
+[data-look=industrial] .side{background:linear-gradient(180deg,#1d2025,#16181c)}
+[data-look=industrial] .brand{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-transform:uppercase;letter-spacing:.14em;font-size:17px}
+[data-look=industrial] .brand .logo{background:linear-gradient(135deg,#ffb400,#ff6a1a);color:#1a1300;border-radius:9px;box-shadow:0 0 14px rgba(255,160,0,.35)}
+[data-look=industrial] .nav{border-radius:8px}
+[data-look=industrial] .nav.on{background:var(--accent-soft);color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+[data-look=industrial] .nav.on em,[data-look=industrial] .shtile em,[data-look=industrial] .btn:not(.sec2):not(.danger),[data-look=industrial] .wk-h.today b{color:#1a1300}
+[data-look=industrial] .btn{border-radius:8px;font-weight:700}
+[data-look=industrial] :is(h4,.sec,.grp h3,.dow,.nav em,.shh,.agrow .tm,.hint b,.sub){font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+[data-look=industrial] :is(.sec,.grp h3,.shh,h4){letter-spacing:.14em}
+[data-look=industrial] h1{letter-spacing:.01em}
+[data-look=industrial] :is(.card,.qa,.shtile,.cal,.wk){background:linear-gradient(180deg,#22262c,#1b1e23);border-color:#333840}
+[data-look=industrial] .modal{position:relative;background:linear-gradient(180deg,#22262c,#1b1e23);border:1px solid #333840;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+[data-look=industrial] .modal::before,[data-look=industrial] .modal::after{content:'';position:absolute;top:9px;width:6px;height:6px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#7b818b,#2b2f36)}
+[data-look=industrial] .modal::before{left:9px}[data-look=industrial] .modal::after{right:9px}
+[data-look=industrial] .seg{background:#15181c;border-color:#2f343c}[data-look=industrial] .seg button.on{background:#2b3037;color:var(--accent)}
+[data-look=industrial] .dash{background:none;border:0;box-shadow:none;padding:0}
+[data-look=industrial] #toast div{background:#2b3037;border:1px solid #3a4048;color:var(--text)}
+@media (max-width:1180px){.dstack{grid-column:span 6}}
+@media (max-width:820px){.dstack{grid-column:span 12}}
 .ttabs{max-width:460px;margin-bottom:16px}.ttabs small{font-size:11px;opacity:.7;margin-left:3px}
 .seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
 .seg button{flex:1;padding:7px 8px;border-radius:7px;font-size:13px;font-weight:600;color:var(--muted);min-height:34px}
@@ -660,13 +686,17 @@ function renderDetail(){const d=$('#detail'),vt=viewType();
  if(ui.sel.type==='task')d.innerHTML=taskDetail(getTask(ui.sel.id));else if(ui.sel.type==='note'){d.innerHTML=noteDetail(getNote(ui.sel.id));if(innerWidth<=640)$('#nback').style.display='grid'}else d.innerHTML=dayDetail(ui.sel.id)}
 function paint(){renderSide();renderCol();renderDetail();$('#main').className='main v-'+viewType()}
 function paintList(){renderSide();renderCol()}
-function applyTheme(){const r=document.documentElement,m=S.set.theme==='auto'?(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):S.set.theme;r.dataset.mode=m;r.style.setProperty('--accent',S.set.accent);document.querySelector('meta[name=theme-color]').content=S.set.accent}
+function applyTheme(){const r=document.documentElement,ind=(S.set.look||'industrial')==='industrial',m=ind?'dark':S.set.theme==='auto'?(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):S.set.theme;r.dataset.mode=m;r.dataset.look=ind?'industrial':'classic';
+ if(ind){if(S.set.accentI&&S.set.accentI!=='#ffb400')r.style.setProperty('--accent',S.set.accentI);else r.style.removeProperty('--accent')}else r.style.setProperty('--accent',S.set.accent);
+ document.querySelector('meta[name=theme-color]').content=ind?'#0f1114':S.set.accent}
 
 /* ============ Settings modal ============ */
-function settingsHTML(){const base=location.origin==='null'||location.protocol==='file:'?'https://DEINE-DOMAIN.pages.dev/':location.origin+location.pathname;const sw=['#6366f1','#8b5cf6','#ec4899','#0ea5e9','#10b981','#f59e0b','#ef4444'];
+function settingsHTML(){const base=location.origin==='null'||location.protocol==='file:'?'https://DEINE-DOMAIN.pages.dev/':location.origin+location.pathname;const sw=[...((S.set.look||'industrial')==='industrial'?['#ffb400','#ff6a1a']:[]),'#6366f1','#8b5cf6','#ec4899','#0ea5e9','#10b981','#f59e0b','#ef4444'];
  return `<div class="ov" data-act="close-modal"><div class="modal" id="mbox"><div class="dhead"><div><h2>Einstellungen</h2><p class="sub" style="margin:0">Darstellung, Kalender, Integrationen, Daten</p></div><button class="iconb" data-act="close-modal">${ic('x')}</button></div>
- <h4>Darstellung</h4><div class="seg" style="max-width:340px"><button class="${S.set.theme==='auto'?'on':''}" data-act="set-theme" data-v="auto">Automatisch</button><button class="${S.set.theme==='light'?'on':''}" data-act="set-theme" data-v="light">Hell</button><button class="${S.set.theme==='dark'?'on':''}" data-act="set-theme" data-v="dark">Dunkel</button></div>
- <div class="sw" style="margin-top:14px">${sw.map(c=>`<button style="--c:${c}" class="${S.set.accent===c?'on':''}" data-act="set-accent" data-v="${c}" aria-label="Akzentfarbe"></button>`).join('')}</div>
+ <h4>Darstellung</h4><div class="seg" style="max-width:340px;margin-bottom:12px"><button class="${(S.set.look||'industrial')==='industrial'?'on':''}" data-act="set-look" data-v="industrial">Industrial</button><button class="${S.set.look==='classic'?'on':''}" data-act="set-look" data-v="classic">Klassisch</button></div>
+ ${(S.set.look||'industrial')==='classic'?'':'<!--ind-->'}<div class="seg" style="max-width:340px;${(S.set.look||'industrial')==='classic'?'':'display:none'}"><button class="${S.set.theme==='auto'?'on':''}" data-act="set-theme" data-v="auto">Automatisch</button><button class="${S.set.theme==='light'?'on':''}" data-act="set-theme" data-v="light">Hell</button><button class="${S.set.theme==='dark'?'on':''}" data-act="set-theme" data-v="dark">Dunkel</button></div>
+ <div class="sw" style="margin-top:14px">${sw.map(c=>`<button style="--c:${c}" class="${((S.set.look||'industrial')==='industrial'?(S.set.accentI||'#ffb400'):S.set.accent)===c?'on':''}" data-act="set-accent" data-v="${c}" aria-label="Akzentfarbe"></button>`).join('')}</div>
+ <div class="row2" style="margin-top:14px"><input class="inp" id="wxCity" value="${esc((S.set.weather||{}).name||'Großlohra')}" placeholder="Wetter-Ort"><button class="btn sec2 sm" data-act="wx-set">Wetter-Ort setzen</button></div>
  <h4 id="h-cal">Kalender</h4>
  <p class="hint"><b>Einfachste Variante (ohne Google-Anmeldung):</b> Kalender per iCal-Link abonnieren. Bei Google: Kalender-Einstellungen → „Geheime Adresse im iCal-Format“ kopieren und unten einfügen. Der Kalender wird beim Öffnen und alle 15 Minuten aktualisiert. Umgekehrt gehen Aufgaben mit Datum als .ics oder per „Google Kalender“-Link raus.</p>
  ${S.set.feeds.map(f=>`<div class="feed"><span class="dot" style="--c:${f.color}"></span><div style="flex:1;min-width:0"><b>${esc(f.name)}</b><div class="hint" style="margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.url?esc(f.url):'Datei-Import'} · ${S.events.filter(e=>e.src===f.id).length} Termine</div></div>${f.url?`<button class="btn sec2 sm" data-act="feed-refresh" data-id="${f.id}">${ic('sync')}</button>`:''}<button class="btn danger sm" data-act="feed-del" data-id="${f.id}">${ic('trash')}</button></div>`).join('')}
@@ -783,6 +813,9 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  case 'ev-save':evSave();break;
  case 'ev-del':if(confirm('Termin löschen?')){S.events=S.events.filter(x=>x.id!==ui.ev.id);save();closeModal();paint()}break;
  case 'ev-ics':evRead();dl('flux-termin.ics',evIcs(ui.ev),'text/calendar');break;
+ case 'dash-note':nav('notes');ui.sel={type:'note',id};paint();break;
+ case 'set-look':S.set.look=v;save();applyTheme();refreshModal();paint();break;
+ case 'wx-set':{const n=(($('#wxCity')||{}).value||'').trim();if(n){S.set.weather={name:n};lsDel('flux-wx');save();toast('Wetter-Ort: '+n)}break}
  case 'kiosk':setKiosk(!ui.kiosk);break;
  case 'dash-day':ui.calSel=v;ui.calDate=v;nav('calendar');break;
  case 'dash-task':nav('today');ui.sel={type:'task',id};paint();break;
@@ -811,7 +844,7 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  case 'fb-now':if(fb.user){S._ts=Date.now();persist();clearTimeout(fb.pushT);pushMain();toast('Wird synchronisiert …')}break;
  case 'close-modal':closeModal();break;
  case 'set-theme':S.set.theme=v;save();applyTheme();refreshModal();break;
- case 'set-accent':S.set.accent=v;save();applyTheme();refreshModal();break;
+ case 'set-accent':if((S.set.look||'industrial')==='industrial')S.set.accentI=v;else S.set.accent=v;save();applyTheme();refreshModal();break;
  case 'feed-add':{const name=$('#feedName').value.trim()||'Kalender',url=$('#feedUrl').value.trim();if(!/^(https?|webcal):/i.test(url)){toast('Bitte einen gültigen Kalender-Link eintragen');break}
   const f={id:uid(),name,url,color:['#f43f5e','#8b5cf6','#14b8a6','#f59e0b','#3b82f6'][S.set.feeds.length%5]};try{await refreshFeed(f);S.set.feeds.push(f);save();toast('Kalender abonniert')}catch(err){toast('Kalender-Link nicht abrufbar. Prüfe den Link oder nutze den .ics-Import.')}refreshModal();paintList();break}
  case 'feed-refresh':{const f=S.set.feeds.find(x=>x.id===id);try{await refreshFeed(f);toast('Aktualisiert')}catch(err){toast('Abruf fehlgeschlagen: '+err.message)}refreshModal();paintList();break}
@@ -1080,6 +1113,18 @@ function evStrip(){const t=today(),l=(calMap(t,t)[t]||{ev:[]}).ev;if(!l.length)r
 const pctRing=(v,tot,label,sub)=>{const R=46,C=2*Math.PI*R,p=tot?Math.min(1,v/tot):1;return `<svg viewBox="0 0 130 130" class="dgauge"><circle cx="65" cy="65" r="58" class="dtick"/><circle cx="65" cy="65" r="${R}" class="dtrack"/><circle cx="65" cy="65" r="${R}" class="dval" stroke-dasharray="${(C*p).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 65 65)"/><text x="65" y="64" class="dnum">${label}</text><text x="65" y="84" class="dsub">${sub}</text></svg>`};
 const dGreet=()=>{const h=new Date().getHours();return h<5?'Nachtschicht?':h<11?'Guten Morgen':h<17?'Guten Tag':h<22?'Guten Abend':'Gute Nacht'};
 const dClock=()=>{const n=new Date();return pad(n.getHours())+':'+pad(n.getMinutes())};
+const noteSnip=n=>{const l=String(n.body||'').split('\n').map(x=>x.replace(/^[#>\-*\s\[\]x|]+/,'').replace(/[*_`]/g,'').trim()).filter(x=>x&&x!==n.title);return (l[0]||'').slice(0,70)};
+const WXI=c=>c===0?['☀️','klar']:c<=2?['⛅','wolkig']:c===3?['☁️','bedeckt']:c<=48?['🌫️','Nebel']:c<=57?['🌦️','Niesel']:c<=67?['🌧️','Regen']:c<=77?['🌨️','Schnee']:c<=82?['🌦️','Schauer']:c<=86?['🌨️','Schneeschauer']:['⛈️','Gewitter'];
+function wxHTML(d,err){if(!d)return `<p class="dempty">${esc(err||'lädt …')}</p>`;const c=d.cur,w=WXI(c.weather_code),dn=['So','Mo','Di','Mi','Do','Fr','Sa'];
+ return `<div class="dwx"><div class="dwt"><span>${w[0]}</span><b>${Math.round(c.temperature_2m)}°</b></div><div class="dwm"><b>${w[1]}</b><small>gefühlt ${Math.round(c.apparent_temperature)}° · Wind ${Math.round(c.wind_speed_10m)} km/h</small></div></div>
+ <div class="dwd">${d.daily.time.slice(1,4).map((t,i)=>`<div><span>${dn[pd(t).getDay()]}</span><i>${WXI(d.daily.weather_code[i+1])[0]}</i><b>${Math.round(d.daily.temperature_2m_max[i+1])}°</b><small>${Math.round(d.daily.temperature_2m_min[i+1])}°</small></div>`).join('')}</div>`}
+function wxCached(){setTimeout(wxLoad,0);try{const c=JSON.parse(lsGet('flux-wx')||'null');if(c&&c.n===((S.set.weather||{}).name||'Großlohra'))return wxHTML(c.d)}catch(e){}return wxHTML(null)}
+function wxPaint(d,err){const e=$('#dkWx');if(e)e.innerHTML=wxHTML(d,err)}
+async function wxLoad(force){const W=S.set.weather||(S.set.weather={name:'Großlohra'}),n=W.name||'Großlohra';
+ try{const c=JSON.parse(lsGet('flux-wx')||'null');if(c&&!force&&c.n===n&&Date.now()-c.t<1800000)return}catch(e){}
+ try{if(!W.lat){const g=await (await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(n)+'&count=1&language=de')).json(),r=g.results&&g.results[0];if(!r){wxPaint(null,'Ort nicht gefunden – in den Einstellungen ändern');return}W.lat=r.latitude;W.lon=r.longitude;save()}
+  const j=await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${W.lat}&longitude=${W.lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe%2FBerlin&forecast_days=4`)).json();
+  const d={cur:j.current,daily:j.daily};lsSet('flux-wx',JSON.stringify({n,t:Date.now(),d}));wxPaint(d)}catch(e){if(!lsGet('flux-wx'))wxPaint(null,'Wetter nicht erreichbar')}}
 function dashHTML(){shopFix();const t=today(),open=S.tasks.filter(x=>!x.done),todayOpen=open.filter(x=>x.due===t),over=open.filter(x=>x.due&&x.due<t),doneT=S.tasks.filter(x=>x.done&&x.due===t).length;
  const evs=[];const m=calMap(t,addDays(t,7));Object.keys(m).sort().forEach(d=>m[d].ev.forEach(e=>evs.push({d,e})));
  evs.sort((a,b)=>a.d.localeCompare(b.d)||((a.e.allDay?'':a.e.time)||'').localeCompare((b.e.allDay?'':b.e.time)||''));
@@ -1087,19 +1132,23 @@ function dashHTML(){shopFix();const t=today(),open=S.tasks.filter(x=>!x.done),to
  const list=[...over.sort((a,b)=>a.due.localeCompare(b.due)),...sortT(todayOpen),...open.filter(x=>!x.due||x.due>t).sort((a,b)=>a.prio-b.prio||b.created-a.created)].slice(0,7);
  const week=[...Array(7)].map((_,i)=>{const d=addDays(t,i);return{d,n:open.filter(x=>x.due===d).length+(i===0?over.length:0),sh:shType(S.shifts.days[d])}}),mx=Math.max(3,...week.map(w=>w.n));
  const dn=['So','Mo','Di','Mi','Do','Fr','Sa'];
+ const nl=S.notes.slice().sort((a,b)=>(b.pinned-a.pinned)||b.updated-a.updated).slice(0,5);
  const shops=S.shop.lists.map(l=>({l,n:l.items.filter(i=>!i.done).length})).filter(x=>x.n).slice(0,8);
  const led=fb.user?`<span class="dled ${fb.state==='err'?'er':fb.state==='sync'?'sy':'ok'}"></span>${fb.state==='err'?'FEHLER':fb.state==='sync'?'SYNC …':'ONLINE'}`:'<span class="dled"></span>LOKAL';
  return `<div class="col-in dashwrap"><div class="dash">
- <div class="dhaz"></div>
  <div class="dgrid">
   <section class="dp w12 dtop"><div><div class="dclock" id="dkClock">${dClock()}</div></div><div class="dmeta"><b>${esc(dGreet())}${fb.user&&fb.user.displayName?', '+esc(fb.user.displayName.split(' ')[0]):''}</b><span>${esc(longDate(t))}</span><span class="dst">${led}</span></div>
    <div class="dtools"><button class="dbtn" data-act="nav" data-v="search" title="Suchen" aria-label="Suchen">${ic('search')}</button><button class="dbtn" data-act="kiosk" title="Anzeige-Modus (Vollbild)" aria-label="Anzeige-Modus">${ic('board')}</button></div></section>
   <section class="dp"><h5>Heute</h5><div class="dgwrap">${pctRing(doneT,doneT+todayOpen.length,doneT+'/'+(doneT+todayOpen.length),'ERLEDIGT')}<div class="dkv"><div><b>${todayOpen.length}</b><span>OFFEN</span></div><div class="${over.length?'warn':''}"><b>${over.length}</b><span>ÜBERFÄLLIG</span></div></div></div></section>
   <section class="dp"><h5>Dienst</h5><div class="dshift"><div><span>HEUTE</span>${shT?`<b style="--c:${shT.color}">${esc(shT.short)}</b><em>${esc(shT.name)}${shT.start?'<br>'+shT.start+'–'+shT.end:''}</em>`:'<b class="no">–</b><em>kein Dienst<br>eingetragen</em>'}</div><div><span>MORGEN</span>${shM?`<b style="--c:${shM.color}">${esc(shM.short)}</b><em>${esc(shM.name)}${shM.start?'<br>'+shM.start+'–'+shM.end:''}</em>`:'<b class="no">–</b><em>–</em>'}</div></div></section>
   <section class="dp"><h5>Woche · offene Aufgaben</h5><div class="dbars">${week.map((w,i)=>`<div class="dbar ${i===0?'now':''}" data-act="dash-day" data-v="${w.d}"><i style="height:${6+Math.round(w.n/mx*64)}px"></i><b>${w.n}</b><span>${dn[pd(w.d).getDay()]}</span>${w.sh?`<u style="--c:${w.sh.color}"></u>`:'<u></u>'}</div>`).join('')}</div></section>
-  <section class="dp w6"><h5>Anstehend</h5>${evs.length?evs.slice(0,6).map(x=>`<div class="dr"${evAttr(x.e)}><span class="dt">${x.e.allDay?'GANZ':esc(x.e.time)}<small>${esc(dlabel(x.d))}</small></span><i style="--c:${x.e.color||'#ffb400'}"></i><div><b>${esc(x.e.title)}</b>${x.e.loc?`<small>${esc(x.e.loc)}</small>`:''}</div></div>`).join(''):'<p class="dempty">Keine Termine in den nächsten 7 Tagen.</p>'}<button class="dlink" data-act="ev-new" data-v="${t}">+ Termin</button></section>
   <section class="dp w6"><h5>Aufgaben</h5>${list.length?list.map(k=>`<div class="dr"><button class="dchk p${k.prio}" data-act="toggle-task" data-id="${k.id}" aria-label="Erledigt"></button><div data-act="dash-task" data-id="${k.id}" style="flex:1;min-width:0;cursor:pointer"><b>${esc(k.title)}</b><small class="${k.due&&k.due<t?'warn':''}">${k.due?esc(dlabel(k.due))+(k.time?' · '+k.time:''):'ohne Datum'}</small></div></div>`).join(''):'<p class="dempty">Alles erledigt.</p>'}<button class="dlink" data-act="nav" data-v="today">Alle Aufgaben →</button></section>
-  <section class="dp w12"><h5>Einkauf</h5>${shops.length?`<div class="dshops">${shops.map(x=>`<button data-act="dash-shop" data-id="${x.l.id}"><span style="--c:${x.l.color}">${esc(x.l.name.slice(0,2))}</span><b>${esc(x.l.name)}</b><em>${x.n}</em></button>`).join('')}</div>`:'<p class="dempty">Alle Einkaufslisten sind leer.</p>'}</section>
+  <div class="dstack">
+  <section class="dp"><h5>Wetter · ${esc((S.set.weather||{}).name||'Großlohra')}</h5><div id="dkWx">${wxCached()}</div></section>
+  <section class="dp"><h5>Anstehend</h5>${evs.length?evs.slice(0,6).map(x=>`<div class="dr"${evAttr(x.e)}><span class="dt">${x.e.allDay?'GANZ':esc(x.e.time)}<small>${esc(dlabel(x.d))}</small></span><i style="--c:${x.e.color||'#ffb400'}"></i><div><b>${esc(x.e.title)}</b>${x.e.loc?`<small>${esc(x.e.loc)}</small>`:''}</div></div>`).join(''):'<p class="dempty">Keine Termine in den nächsten 7 Tagen.</p>'}<button class="dlink" data-act="ev-new" data-v="${t}">+ Termin</button></section>
+  </div>
+  <section class="dp w6"><h5>Einkauf</h5>${shops.length?`<div class="dshops">${shops.map(x=>`<button data-act="dash-shop" data-id="${x.l.id}"><span style="--c:${x.l.color}">${esc(x.l.name.slice(0,2))}</span><b>${esc(x.l.name)}</b><em>${x.n}</em></button>`).join('')}</div>`:'<p class="dempty">Alle Einkaufslisten sind leer.</p>'}</section>
+  <section class="dp w6"><h5>Notizen</h5>${nl.length?nl.map(n=>`<div class="dr" data-act="dash-note" data-id="${n.id}" style="cursor:pointer"><div style="flex:1;min-width:0"><b>${n.pinned?ic('pin').replace('<svg','<svg style="width:13px;height:13px;vertical-align:-2px;color:var(--am);margin-right:4px"'):''}${esc(n.title||'Ohne Titel')}</b><small>${esc(noteSnip(n))}</small></div></div>`).join(''):'<p class="dempty">Noch keine Notizen.</p>'}<button class="dlink" data-act="new-note">+ Neue Notiz</button></section>
   <section class="dp w12"><h5>Schnell erfassen</h5>${qaForm()}</section>
  </div></div></div>`}
 let wakeLock=null;
