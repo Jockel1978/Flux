@@ -145,6 +145,7 @@ a.btn{text-decoration:none}
 .cell.today .dn{background:var(--accent);color:#fff}
 .chip{font-size:11.5px;line-height:1.25;padding:3px 6px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
 .cal.week .chip{white-space:normal}
+.chip.ev[data-act],.wk-blk.ev[data-act]{cursor:pointer}
 .chip.ev{background:color-mix(in srgb,var(--c) 16%,transparent);color:var(--c);border-left:3px solid var(--c)}
 .chip.tk{background:var(--panel2);border-left:3px solid var(--pc,var(--p4))}
 .chip.tk.p1{--pc:var(--p1)}.chip.tk.p2{--pc:var(--p2)}.chip.tk.p3{--pc:var(--p3)}
@@ -546,6 +547,7 @@ function tasksHTML(){const list=filt(false),dn=filt(true),gs=groupsOf(list),t=to
  const sub=ui.view==='today'?longDate(t):ui.view==='inbox'?'Unsortiertes landet hier':'';
  return `<div class="col-in">${taskTabs()}<div class="head"><div><h1>${esc(viewTitle())}</h1><p class="sub">${sub?sub+' · ':''}${list.length} offen</p></div></div>
  ${qaForm()}
+ ${ui.view==='today'?evStrip():''}
  ${gs.length?gs.map(g=>`<div class="grp"><h3 class="${g.cls||''}">${esc(g.label)}${g.label?`<span>${g.items.length}</span>`:''}</h3><div class="card">${g.items.map(taskRow).join('')}</div></div>`).join(''):`<div class="empty"><div class="big">${ic('task')}</div><b>Alles erledigt</b><p>Nichts offen – genieß den Moment oder leg oben etwas Neues an.</p></div>`}
  ${dn.length?`<button class="more" data-act="toggle-done">${ic(ui.doneOpen?'down':'right')} Erledigt (${dn.length})</button>${ui.doneOpen?`<div class="card">${dn.slice(0,30).map(taskRow).join('')}</div>`:''}`:''}</div>`}
 function qaPreview(txt){const o=parseQuick(txt),a=area(o.area);const P=[];
@@ -734,6 +736,13 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  case 'gsync-all':try{let cnt=0;for(const t of S.tasks.filter(x=>!x.done&&x.due)){await gPush(t);cnt++}const pl=await gPull();toast(cnt+' Aufgaben übertragen, '+pl+' Termine geladen');paintList()}catch(err){toast(err.message)}refreshModal();break;
  case 'settings':openSettings();break;
  case 'settings-cal':openSettings(true);break;
+ case 'ev-new':evNew(v||ui.calSel||today());break;
+ case 'ev-edit':e.stopPropagation();evEdit(id);break;
+ case 'ev-allday':evRead();ui.ev.allDay=!ui.ev.allDay;if(!ui.ev.endDate)ui.ev.endDate=ui.ev.date;sheet(evSheet);break;
+ case 'ev-color':evRead();ui.ev.color=v;sheet(evSheet);break;
+ case 'ev-save':evSave();break;
+ case 'ev-del':if(confirm('Termin löschen?')){S.events=S.events.filter(x=>x.id!==ui.ev.id);save();closeModal();paint()}break;
+ case 'ev-ics':evRead();dl('flux-termin.ics',evIcs(ui.ev),'text/calendar');break;
  case 'shop-share':sheet(shareSheet);break;
  case 'g-create':gCreate();break;
  case 'g-leave':if(confirm('Gemeinsame Listen verlassen? Du behältst eine Kopie.'))gLeave();break;
@@ -876,7 +885,7 @@ function layoutLanes(items){items.sort((a,b)=>a.s-b.s||b.e-a.e);let cl=[],cend=0
  items.forEach(it=>{if(it.s>=cend){flush();cl=[];lanes=[]}let l=0;while(lanes[l]!==undefined&&lanes[l]>it.s)l++;lanes[l]=it.e;it.lane=l;cl.push(it);cend=Math.max(cend,it.e)});flush();return items}
 function weekHTML(){const start=monday(ui.calDate),m=calMap(start,addDays(start,6)),t=today(),days=[...Array(7)].map((_,i)=>addDays(start,i)),dn=['Mo','Di','Mi','Do','Fr','Sa','So'];
  const head=`<div class="wk-row"><div class="wk-h" style="cursor:default"></div>${days.map((d,i)=>`<div class="wk-h ${d===t?'today':''} ${d===ui.calSel?'sel':''}" data-act="cal-day" data-d="${d}">${dn[i]}<b>${pd(d).getDate()}</b></div>`).join('')}</div>`;
- const allday=`<div class="wk-row wk-ad"><div>Ganztag</div>${days.map(d=>{const x=m[d]||{ev:[],tk:[]},ty=shType(S.shifts.days[d]);return `<div data-drop="allday" data-d="${d}">${ty?`<div class="chip sh" style="--c:${ty.color}">${esc(ty.short)} ${ty.start?ty.start+'–'+ty.end:esc(ty.name)}</div>`:''}${x.ev.filter(e=>e.allDay||!e.time).map(e=>`<div class="chip ev" style="--c:${e.color||'#4285f4'}">${esc(e.title)}</div>`).join('')}${x.tk.filter(k=>!k.time).map(k=>`<div class="chip tk p${k.prio} ${k.done?'done':''}" data-act="open-task" data-id="${k.id}" data-drag="task">${esc(k.title)}</div>`).join('')}</div>`}).join('')}</div>`;
+ const allday=`<div class="wk-row wk-ad"><div>Ganztag</div>${days.map(d=>{const x=m[d]||{ev:[],tk:[]},ty=shType(S.shifts.days[d]);return `<div data-drop="allday" data-d="${d}">${ty?`<div class="chip sh" style="--c:${ty.color}">${esc(ty.short)} ${ty.start?ty.start+'–'+ty.end:esc(ty.name)}</div>`:''}${x.ev.filter(e=>e.allDay||!e.time).map(e=>`<div class="chip ev" style="--c:${e.color||'#4285f4'}"${e.src==='local'?` data-act="ev-edit" data-id="${e.id}"`:''}>${esc(e.title)}</div>`).join('')}${x.tk.filter(k=>!k.time).map(k=>`<div class="chip tk p${k.prio} ${k.done?'done':''}" data-act="open-task" data-id="${k.id}" data-drag="task">${esc(k.title)}</div>`).join('')}</div>`}).join('')}</div>`;
  const hours=[...Array(24)].map((_,h)=>`<span style="top:${h*HH}px">${h?pad(h)+':00':''}</span>`).join('');
  const nowM=new Date().getHours()*60+new Date().getMinutes();
  const cols=days.map(d=>{const x=m[d]||{ev:[],tk:[]},items=[];
@@ -884,19 +893,19 @@ function weekHTML(){const start=monday(ui.calDate),m=calMap(start,addDays(start,
   x.tk.filter(k=>k.time).forEach(k=>{const s=toMin(k.time);items.push({s,e:s+60,kind:'tk',o:k})});
   layoutLanes(items);
   const blocks=items.map(it=>{const w=100/it.n,st=`top:${it.s*HH/60}px;height:${Math.max(22,(it.e-it.s)*HH/60-2)}px;left:calc(${it.lane*w}% + 1px);width:calc(${w}% - 3px)`;
-   return it.kind==='ev'?`<div class="wk-blk ev" style="${st};--c:${it.o.color||'#4285f4'}"><b>${it.o.time}</b> ${esc(it.o.title)}</div>`:`<div class="wk-blk p${it.o.prio} ${it.o.done?'done':''}" style="${st}" data-act="open-task" data-id="${it.o.id}" data-drag="task"><b>${it.o.time}</b> ${esc(it.o.title)}</div>`}).join('');
+   return it.kind==='ev'?`<div class="wk-blk ev" style="${st};--c:${it.o.color||'#4285f4'}"${it.o.src==='local'?` data-act="ev-edit" data-id="${it.o.id}"`:''}><b>${it.o.time}</b> ${esc(it.o.title)}</div>`:`<div class="wk-blk p${it.o.prio} ${it.o.done?'done':''}" style="${st}" data-act="open-task" data-id="${it.o.id}" data-drag="task"><b>${it.o.time}</b> ${esc(it.o.title)}</div>`}).join('');
   return `<div class="wk-col ${d===t?'today':''}" data-drop="day" data-d="${d}">${blocks}${d===t?`<div class="wk-now" style="top:${nowM*HH/60}px"></div>`:''}</div>`}).join('');
  return `<div class="wk" style="--hh:${HH}px">${head}${allday}<div class="wk-body" id="wkbody"><div class="wk-grid"><div class="wk-t">${hours}</div>${cols}</div></div></div>`}
 function calHTML(){const cd=pd(ui.calDate),week=ui.calMode==='week';let title,grid;
  if(week){const s=monday(ui.calDate);title=pd(s).toLocaleDateString('de-DE',{day:'numeric',month:'short'})+' – '+pd(addDays(s,6)).toLocaleDateString('de-DE',{day:'numeric',month:'short',year:'numeric'});grid=weekHTML()}
  else{const f=new Date(cd.getFullYear(),cd.getMonth(),1),start=monday(ymd(f)),m=calMap(start,addDays(start,41)),t=today();title=cd.toLocaleDateString('de-DE',{month:'long',year:'numeric'});let cells='';
   for(let i=0;i<42;i++){const d=addDays(start,i),x=m[d]||{ev:[],tk:[]},dd=pd(d),ty=shType(S.shifts.days[d]);
-   const items=[...x.ev.map(e=>`<div class="chip ev" style="--c:${e.color||'#4285f4'}" title="${esc(e.title)}">${e.time&&!e.allDay?e.time+' ':''}${esc(e.title)}</div>`),...sortT(x.tk).map(k=>`<div class="chip tk p${k.prio} ${k.done?'done':''}" data-act="open-task" data-id="${k.id}" data-drag="task">${k.time?k.time+' ':''}${esc(k.title)}</div>`)];
+   const items=[...x.ev.map(e=>`<div class="chip ev" style="--c:${e.color||'#4285f4'}" title="${esc(e.title)}"${e.src==='local'?` data-act="ev-edit" data-id="${e.id}"`:''}>${e.time&&!e.allDay?e.time+' ':''}${esc(e.title)}</div>`),...sortT(x.tk).map(k=>`<div class="chip tk p${k.prio} ${k.done?'done':''}" data-act="open-task" data-id="${k.id}" data-drag="task">${k.time?k.time+' ':''}${esc(k.title)}</div>`)];
    cells+=`<div class="cell ${dd.getMonth()!==cd.getMonth()?'out':''} ${d===t?'today':''} ${d===ui.calSel?'sel':''}" data-act="cal-day" data-drop="cal-day" data-d="${d}"><div class="dnr"><div class="dn">${dd.getDate()}</div>${ty?`<span class="shb" style="--c:${ty.color}">${esc(ty.short)}</span>`:''}</div>${items.slice(0,3).join('')}${items.length>3?`<div class="chip mo">+${items.length-3} weitere</div>`:''}</div>`}
   grid=`<div class="cal">${['Mo','Di','Mi','Do','Fr','Sa','So'].map(x=>`<div class="dow">${x}</div>`).join('')}${cells}</div>`}
  return `<div class="col-in"><div class="calhead"><h1>${esc(title)}</h1><button class="iconb" data-act="cal-prev" aria-label="Zurück">${ic('left')}</button><button class="ghost" data-act="cal-today" style="background:var(--panel);border:1px solid var(--line)">Heute</button><button class="iconb" data-act="cal-next" aria-label="Weiter">${ic('right')}</button>
  <div class="seg" style="width:170px"><button class="${!week?'on':''}" data-act="cal-mode" data-v="month">Monat</button><button class="${week?'on':''}" data-act="cal-mode" data-v="week">Woche</button></div>
- <button class="iconb" data-act="settings-cal" title="Kalender verbinden" aria-label="Kalender-Sync">${ic('sync')}</button></div>${grid}</div>`}
+ <button class="iconb" data-act="settings-cal" title="Kalender verbinden" aria-label="Kalender-Sync">${ic('sync')}</button><button class="btn sm" data-act="ev-new" data-v="${ui.calSel}">${ic('plus')} Termin</button></div>${grid}</div>`}
 
 /* ---- Dienstplan ---- */
 const shType=id=>S.shifts.types.find(t=>t.id===id);
@@ -934,7 +943,7 @@ function shiftIcs(){const stamp=new Date().toISOString().replace(/[-:]/g,'').rep
 function dayDetail(d){const m=calMap(d,d)[d]||{ev:[],tk:[]},ty=shType(S.shifts.days[d]);
  return `<div class="dhead"><div><h1 style="font-size:22px">${esc(dlabel(d))}</h1><p class="sub">${esc(longDate(d))}</p></div><button class="iconb" data-act="close-detail">${ic('x')}</button></div>
  <form class="qa" id="qaday" autocomplete="off" data-d="${d}">${ic('plus')}<input id="qai2" placeholder="Aufgabe für diesen Tag …"><button class="btn sm" type="submit">OK</button></form>
- <div class="blk"><h4>Termine</h4>${ty?`<div class="agrow"><div class="tm">Dienst</div><div class="bar" style="--c:${ty.color}"></div><div><b>${esc(ty.name)}</b>${ty.start?`<div class="hint" style="margin:0">${ty.start}–${ty.end}</div>`:''}</div></div>`:''}${m.ev.length?m.ev.map(e=>`<div class="agrow"><div class="tm">${e.allDay?'Ganztag':esc(e.time)}</div><div class="bar" style="--c:${e.color||'#4285f4'}"></div><div><b>${esc(e.title)}</b>${e.loc?`<div class="hint" style="margin:0">${esc(e.loc)}</div>`:''}</div></div>`).join(''):(ty?'':'<p class="hint">Keine Termine. Verbinde einen Kalender über das Sync-Symbol.</p>')}</div>
+ <div class="blk"><h4 style="display:flex;align-items:center;justify-content:space-between">Termine <button class="btn sec2 sm" data-act="ev-new" data-v="${d}" style="text-transform:none;letter-spacing:0">${ic('plus')} Termin</button></h4>${ty?`<div class="agrow"><div class="tm">Dienst</div><div class="bar" style="--c:${ty.color}"></div><div><b>${esc(ty.name)}</b>${ty.start?`<div class="hint" style="margin:0">${ty.start}–${ty.end}</div>`:''}</div></div>`:''}${m.ev.length?m.ev.map(e=>`<div class="agrow"${evAttr(e)}><div class="tm">${e.allDay?'Ganztag':esc(e.time)}</div><div class="bar" style="--c:${e.color||'#4285f4'}"></div><div><b>${esc(e.title)}</b>${e.loc?`<div class="hint" style="margin:0">${esc(e.loc)}</div>`:''}</div></div>`).join(''):(ty?'':'<p class="hint">Keine Termine.</p>')}</div>
  <div class="blk"><h4>Aufgaben</h4>${m.tk.length?`<div class="card">${sortT(m.tk).map(taskRow).join('')}</div>`:'<p class="hint">Keine Aufgaben.</p>'}</div>`}
 
 /* ---- Aufgaben-Vorlagen ---- */
@@ -995,6 +1004,34 @@ async function fetchICS(url){url=url.replace(/^webcal:/i,'https:');
  try{const r=await fetch('api/ics?url='+encodeURIComponent(url));if(r.ok&&/calendar/.test(r.headers.get('content-type')||''))return r.text()}catch(e){}
  const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}
 
+/* ============ Termine (eigene Kalendereinträge) ============ */
+const EV_COL=['#6366f1','#0ea5e9','#10b981','#f59e0b','#ec4899','#ef4444'];
+const isFileEv=e=>((S.set.feeds.find(f=>f.id===e.src)||{}).url)==='';
+const evSynced=e=>e.src==='local'||isFileEv(e);
+function evNew(d){const n=new Date(),h=Math.min(22,n.getHours()+1);d=d||today();ui.ev={id:null,title:'',date:d,endDate:d,allDay:false,time:pad(h)+':00',endTime:pad(h+1)+':00',loc:'',color:EV_COL[0]};sheet(evSheet)}
+function evEdit(id){const e=S.events.find(x=>x.id===id);if(!e||e.src!=='local')return;ui.ev={...e,endDate:e.endDate||e.date};sheet(evSheet)}
+function evRead(){const o=ui.ev;if(!o||!$('#evT'))return;const g=i=>($('#'+i)||{}).value;o.title=g('evT');o.date=g('evD')||o.date;if(o.allDay)o.endDate=g('evD2')||o.date;else{o.time=g('evS')||o.time;o.endTime=g('evE')||''}o.loc=g('evL')||''}
+function evSheet(){const o=ui.ev;
+ return sheetHead(o.id?'Termin bearbeiten':'Neuer Termin')+`<input class="inp" id="evT" value="${esc(o.title)}" placeholder="Titel, z. B. Zahnarzt" style="font-size:17px;margin-bottom:10px" autocomplete="off">
+ <label class="chkrow"><input type="checkbox" data-act="ev-allday" ${o.allDay?'checked':''}> Ganztägig</label>
+ <div class="row2" style="margin:6px 0 10px"><div style="flex:1;min-width:140px"><div class="hint" style="margin:0 0 4px">Datum</div><input class="inp" type="date" id="evD" value="${esc(o.date)}"></div>
+ ${o.allDay?`<div style="flex:1;min-width:140px"><div class="hint" style="margin:0 0 4px">Bis</div><input class="inp" type="date" id="evD2" value="${esc(o.endDate||o.date)}"></div>`:`<div style="flex:1;min-width:110px"><div class="hint" style="margin:0 0 4px">Von</div><input class="inp" type="time" id="evS" value="${esc(o.time)}"></div><div style="flex:1;min-width:110px"><div class="hint" style="margin:0 0 4px">Bis</div><input class="inp" type="time" id="evE" value="${esc(o.endTime||'')}"></div>`}</div>
+ <input class="inp" id="evL" value="${esc(o.loc||'')}" placeholder="Ort (optional)" autocomplete="off" style="margin-bottom:12px">
+ <div class="row2" style="gap:10px;margin-bottom:14px">${EV_COL.map(c=>`<button data-act="ev-color" data-v="${c}" aria-label="Farbe" style="width:34px;height:34px;border-radius:50%;background:${c};${o.color===c?'outline:3px solid var(--text);outline-offset:2px':''}"></button>`).join('')}</div>
+ <div class="row2"><button class="btn" data-act="ev-save">Speichern</button>${o.id?`<button class="btn danger sm" data-act="ev-del">${ic('trash')} Löschen</button>`:''}</div>
+ ${o.id?`<div class="row2" style="margin-top:12px"><a class="btn sec2 sm" href="${esc(evGcal(o))}" target="_blank" rel="noopener">${ic('cal')} Google Kalender</a><button class="btn sec2 sm" data-act="ev-ics">${ic('down')} .ics (Apple/Outlook)</button></div>`:''}`}
+function evEnd(o){return o.allDay?{d:addDays(o.endDate||o.date,1),t:''}:{d:o.date,t:o.endTime&&o.endTime>o.time?o.endTime:pad(Math.min(23,toMin(o.time)/60+1|0))+':'+(o.time||'00:00').slice(3)}}
+function evGcal(o){const e=evEnd(o);return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(o.title)+'&dates='+cmp(o.date,o.allDay?'':o.time)+'/'+cmp(e.d,e.t)+(o.loc?'&location='+encodeURIComponent(o.loc):'')+'&details='+encodeURIComponent('Aus Flux')}
+function evIcs(o){const e=evEnd(o),st=new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
+ return icsWrap([['BEGIN:VEVENT','UID:'+o.id+'@flux','DTSTAMP:'+st,o.allDay?'DTSTART;VALUE=DATE:'+cmp(o.date):'DTSTART:'+cmp(o.date,o.time),o.allDay?'DTEND;VALUE=DATE:'+cmp(e.d):'DTEND:'+cmp(e.d,e.t),'SUMMARY:'+icsEsc(o.title),...(o.loc?['LOCATION:'+icsEsc(o.loc)]:[]),'END:VEVENT']])}
+function evSave(){evRead();const o=ui.ev;if(!o)return;if(!o.title.trim()){toast('Bitte einen Titel eintragen');return}
+ let ed=o.allDay?(o.endDate&&o.endDate>=o.date?o.endDate:o.date):o.date;
+ const e={id:o.id||'e_'+uid(),title:o.title.trim(),loc:o.loc||'',allDay:!!o.allDay,time:o.allDay?'':o.time,endTime:o.allDay?'':(o.endTime||''),date:o.date,endDate:ed,color:o.color,src:'local'};
+ const i=S.events.findIndex(x=>x.id===e.id);if(i>=0)S.events[i]=e;else S.events.push(e);ui.calSel=e.date;save();closeModal();paint();toast('Termin gespeichert')}
+const evAttr=e=>e.src==='local'?` data-act="ev-edit" data-id="${e.id}" style="cursor:pointer"`:'';
+function evStrip(){const t=today(),l=(calMap(t,t)[t]||{ev:[]}).ev;if(!l.length)return '';
+ return `<div class="blk" style="margin:0 0 18px"><h4>Termine heute</h4><div class="card" style="padding:4px 14px">${l.map(e=>`<div class="agrow"${evAttr(e).replace(' style="cursor:pointer"',' style="cursor:pointer"')}><div class="tm">${e.allDay?'Ganztag':esc(e.time)}</div><div class="bar" style="--c:${e.color||'#4285f4'}"></div><div><b>${esc(e.title)}</b>${e.loc?`<div class="hint" style="margin:0">${esc(e.loc)}</div>`:''}</div></div>`).join('')}</div></div>`}
+
 /* ============ Einkauf (Listen pro Markt) ============ */
 const SHOP_PRE=[['Lidl','#1d4ed8','food'],['Aldi','#0ea5e9','food'],['Edeka','#ca8a04','food'],['Rewe','#dc2626','food'],['Kaufland','#e11d48','food'],['Penny','#ef4444','food'],['Netto','#f59e0b','food'],['Norma','#0369a1','food'],['Globus','#7c3aed','food'],['dm','#f97316','drug'],['Rossmann','#be123c','drug'],['Müller','#fb923c','drug'],['Baumarkt','#65a30d','hw'],['Apotheke','#16a34a','pharm'],['Action','#2563eb','misc'],['Getränkemarkt','#0891b2','food'],['Bäcker','#b45309','food'],['Metzger','#9f1239','food'],['Wochenmarkt','#15803d','food'],['Sonstiges','#64748b','misc']];
 const SHOP_DEF=['Rewe','Edeka','Netto','Lidl','Norma'],SHOP_OLD=['Lidl','Aldi','Edeka','Rewe','Kaufland','dm','Rossmann','Baumarkt','Apotheke','Sonstiges'];
@@ -1043,7 +1080,7 @@ var fb={user:null,state:'off',msg:'',hold:false,ready:false,pushT:null,unM:null,
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 const lsDel=k=>{try{localStorage.removeItem(k)}catch(e){}};
-const mainJSON=()=>{const o={...S};delete o.img;if(o.shop&&o.shop.gid)o.shop={v:2,gid:o.shop.gid,gname:o.shop.gname,hist:o.shop.hist,lists:[]};return JSON.stringify(o)};
+const mainJSON=()=>{const o={...S};delete o.img;o.events=(S.events||[]).filter(evSynced);if(o.shop&&o.shop.gid)o.shop={v:2,gid:o.shop.gid,gname:o.shop.gname,hist:o.shop.hist,lists:[]};return JSON.stringify(o)};
 function fbStatusText(){return fb.state==='err'?(fb.msg||'Fehler'):fb.state==='sync'?'synchronisiere …':fb.state==='ok'?'synchronisiert':'verbinde …'}
 function fbErr(e){const c=(e&&e.code)||'';const m={
  'auth/popup-blocked':'Popup wurde blockiert – bitte Popups für die Seite erlauben.','auth/popup-closed-by-user':'Anmeldung abgebrochen.','auth/cancelled-popup-request':'Anmeldung abgebrochen.',
@@ -1074,9 +1111,9 @@ function blankS(){const D=defaults();D.tasks=[];D.notes=[];return D}
 function mergeS(l,r){const o=JSON.parse(JSON.stringify(r));['tasks','notes','events','templates'].forEach(k=>{o[k]=o[k]||[];const ids=new Set(o[k].map(x=>x.id));(l[k]||[]).forEach(x=>{if(!ids.has(x.id))o[k].push(x)})});
  if(l.shop&&l.shop.lists){if(!o.shop||!o.shop.lists)o.shop=shopDefault();l.shop.lists.forEach(x=>{const m=o.shop.lists.find(y=>y.id===x.id);if(!m)o.shop.lists.push(x);else{const ids=new Set(m.items.map(i=>i.id));x.items.forEach(i=>{if(!ids.has(i.id))m.items.push(i)})}})}
  o.shifts=o.shifts||defaults().shifts;o.shifts.days={...((l.shifts||{}).days||{}),...(o.shifts.days||{})};return o}
-function adopt(d,ts){const D=defaults(),keep={theme:S.set.theme,notify:S.set.notify},img=S.img;
+function adopt(d,ts){const D=defaults(),keep={theme:S.set.theme,notify:S.set.notify},img=S.img,keepEv=(S.events||[]).filter(e=>!evSynced(e));
  if(d.shop&&(!d.shop.lists||!d.shop.lists.length)&&S.shop&&S.shop.lists&&(!d.shop.gid||d.shop.gid===S.shop.gid))d.shop={...d.shop,lists:S.shop.lists};
- S=Object.assign(D,d,{set:{...D.set,...(d.set||{}),hooks:{...D.set.hooks,...((d.set||{}).hooks||{})},...keep}});S.img=img;S._ts=ts;fixS();persist();applyTheme();
+ S=Object.assign(D,d,{set:{...D.set,...(d.set||{}),hooks:{...D.set.hooks,...((d.set||{}).hooks||{})},...keep}});S.img=img;S._ts=ts;S.events=[...keepEv,...(d.events||[]).filter(evSynced)];fixS();persist();applyTheme();
  if(ui.sel&&!getTask(ui.sel)&&!getNote(ui.sel))ui.sel=null;paint()}
 function adoptSafe(d,ts){const a=document.activeElement;if(a&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&!ui.modal){setTimeout(()=>{if(fb.user&&ts>(S._ts||0))adoptSafe(d,ts)},2500);return}adopt(d,ts)}
 function parseMain(d){try{return JSON.parse(d.json)}catch(e){return null}}
