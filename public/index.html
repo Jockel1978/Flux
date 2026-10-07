@@ -358,7 +358,7 @@ a.btn{text-decoration:none}
   #app{grid-template-columns:1fr;grid-template-rows:1fr 62px}
   .side{order:2;flex-direction:row;padding:6px;border-right:0;border-top:1px solid var(--line);overflow-x:auto;align-items:center}
   .side .brand,.side .grow,.side .dot,.side .nav.tag,.side .nav.area{display:none}
-  .nav{width:auto;flex:1;min-width:0;padding:7px 0}.nav .label{font-size:10px}.side .acctb,.side .nav[data-v=search]{display:none}
+  .nav{width:auto;flex:1;min-width:0;padding:7px 0}.nav .label{font-size:10px}.side .acctb{display:none}
   .main{height:auto;min-height:0}
   .main.v-notes .col{flex:1;border:0}
   .main.v-notes .detail.show,.main .detail.show{position:fixed;inset:0;width:auto;z-index:30;display:flex;flex-direction:column}
@@ -579,7 +579,6 @@ function renderSide(){const t=today(),op=openT();
  const tagCount={};[...S.tasks.filter(x=>!x.done),...S.notes].forEach(x=>(x.tags||[]).forEach(g=>tagCount[g]=(tagCount[g]||0)+1));
  const tags=Object.entries(tagCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
  $('#side').innerHTML=`<div class="brand"><div class="logo">${ic('bolt')}</div><b class="label">Flux</b></div>
- <button class="nav ${ui.view==='search'?'on':''}" data-act="nav" data-v="search" title="Suchen">${ic('search')}<span class="label">Suchen</span><kbd>⌘K</kbd></button>
  ${nav('dash','dash','Übersicht')}<button class="nav ${TASKMAIN.includes(ui.view)?'on':''}" data-act="nav" data-v="${ui.lastTask||'today'}" title="Aufgaben">${ic('sun')}<span class="label">Aufgaben</span>${cnt.today?`<em>${cnt.today}</em>`:''}</button>${nav('notes','note','Notizen')}${nav('calendar','cal','Kalender')}${nav('shifts','rota','Dienstplan')}${nav('shop','cart','Einkauf')}
  <div class="sec">Bereiche</div>
  ${S.areas.map(a=>`<button class="nav area ${ui.view==='area:'+a.id?'on':''}" data-act="nav" data-v="area:${a.id}" title="${esc(a.name)}"><span class="dot" style="--c:${a.color}"></span><span class="label">${esc(a.name)}</span><em>${op.filter(x=>x.area===a.id).length||''}</em></button>`).join('')}
