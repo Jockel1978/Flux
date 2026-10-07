@@ -150,6 +150,7 @@ body.kiosk #side{display:none}body.kiosk #app{grid-template-columns:1fr;grid-tem
 .dempty{color:var(--mt);font-size:14px;margin:8px 0}
 .dshops{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.dshops button{display:flex;align-items:center;gap:10px;background:#15181c;border:1px solid #2d3238;border-radius:10px;padding:8px 12px;color:var(--tx);min-height:48px}
 .dshops span{width:30px;height:30px;border-radius:8px;background:var(--c);display:grid;place-items:center;font-weight:800;font-size:12px;color:#fff}.dshops b{flex:1;text-align:left;font-size:14px}.dshops em{font:700 14px ui-monospace,monospace;color:var(--am);font-style:normal}
+.dp .qa{margin:0}.dp .qp:empty{display:none}.dp .qp{margin:10px 0 0;min-height:0}
 .dash .qa{background:#15181c;border-color:#2d3238;box-shadow:none;color:var(--tx)}.dash .qa input{color:var(--tx)}
 @media (max-width:1180px){.dp{grid-column:span 6}.dp.w6{grid-column:span 6}}
 @media (max-width:820px){.dp,.dp.w6{grid-column:span 12}.main.v-dash .col{padding:10px}.dtop{padding:12px 16px}}
@@ -1138,6 +1139,7 @@ function dashHTML(){shopFix();const t=today(),open=S.tasks.filter(x=>!x.done),to
  <div class="dgrid">
   <section class="dp w12 dtop"><div><div class="dclock" id="dkClock">${dClock()}</div></div><div class="dmeta"><b>${esc(dGreet())}${fb.user&&fb.user.displayName?', '+esc(fb.user.displayName.split(' ')[0]):''}</b><span>${esc(longDate(t))}</span><span class="dst">${led}</span></div>
    <div class="dtools"><button class="dbtn" data-act="nav" data-v="search" title="Suchen" aria-label="Suchen">${ic('search')}</button><button class="dbtn" data-act="kiosk" title="Anzeige-Modus (Vollbild)" aria-label="Anzeige-Modus">${ic('board')}</button></div></section>
+  <section class="dp w12"><h5>Schnell erfassen</h5>${qaForm()}</section>
   <section class="dp"><h5>Heute</h5><div class="dgwrap">${pctRing(doneT,doneT+todayOpen.length,doneT+'/'+(doneT+todayOpen.length),'ERLEDIGT')}<div class="dkv"><div><b>${todayOpen.length}</b><span>OFFEN</span></div><div class="${over.length?'warn':''}"><b>${over.length}</b><span>ÜBERFÄLLIG</span></div></div></div></section>
   <section class="dp"><h5>Dienst</h5><div class="dshift"><div><span>HEUTE</span>${shT?`<b style="--c:${shT.color}">${esc(shT.short)}</b><em>${esc(shT.name)}${shT.start?'<br>'+shT.start+'–'+shT.end:''}</em>`:'<b class="no">–</b><em>kein Dienst<br>eingetragen</em>'}</div><div><span>MORGEN</span>${shM?`<b style="--c:${shM.color}">${esc(shM.short)}</b><em>${esc(shM.name)}${shM.start?'<br>'+shM.start+'–'+shM.end:''}</em>`:'<b class="no">–</b><em>–</em>'}</div></div></section>
   <section class="dp"><h5>Woche · offene Aufgaben</h5><div class="dbars">${week.map((w,i)=>`<div class="dbar ${i===0?'now':''}" data-act="dash-day" data-v="${w.d}"><i style="height:${6+Math.round(w.n/mx*64)}px"></i><b>${w.n}</b><span>${dn[pd(w.d).getDay()]}</span>${w.sh?`<u style="--c:${w.sh.color}"></u>`:'<u></u>'}</div>`).join('')}</div></section>
@@ -1148,7 +1150,6 @@ function dashHTML(){shopFix();const t=today(),open=S.tasks.filter(x=>!x.done),to
   </div>
   <section class="dp w6"><h5>Einkauf</h5>${shops.length?`<div class="dshops">${shops.map(x=>`<button data-act="dash-shop" data-id="${x.l.id}"><span style="--c:${x.l.color}">${esc(x.l.name.slice(0,2))}</span><b>${esc(x.l.name)}</b><em>${x.n}</em></button>`).join('')}</div>`:'<p class="dempty">Alle Einkaufslisten sind leer.</p>'}</section>
   <section class="dp w6"><h5>Notizen</h5>${nl.length?nl.map(n=>`<div class="dr" data-act="dash-note" data-id="${n.id}" style="cursor:pointer"><div style="flex:1;min-width:0"><b>${n.pinned?ic('pin').replace('<svg','<svg style="width:13px;height:13px;vertical-align:-2px;color:var(--am);margin-right:4px"'):''}${esc(n.title||'Ohne Titel')}</b><small>${esc(noteSnip(n))}</small></div></div>`).join(''):'<p class="dempty">Noch keine Notizen.</p>'}<button class="dlink" data-act="new-note">+ Neue Notiz</button></section>
-  <section class="dp w12"><h5>Schnell erfassen</h5>${qaForm()}</section>
  </div></div></div>`}
 let wakeLock=null;
 async function setKiosk(on){ui.kiosk=on;document.body.classList.toggle('kiosk',on);
