@@ -46,6 +46,9 @@ html,body{overflow:hidden;overscroll-behavior:none;position:fixed;inset:0;width:
 .main.v-cal .detail{width:350px}
 .detail{display:none;width:410px;flex:none;background:var(--panel);border-left:1px solid var(--line);overflow:auto;padding:22px 22px 60px}
 .detail.show{display:block}
+.main.v-notes.nl-hide .col{display:none}
+.nlt{flex:none}
+@media (max-width:640px){.nlt{display:none!important}}
 .main.v-notes .detail{flex:1;width:auto;padding:0;display:flex;flex-direction:column;border:0;background:var(--bg)}
 .head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px}
 h1{margin:0;font-size:30px;letter-spacing:-.03em;line-height:1.1}
@@ -662,7 +665,7 @@ function calMap(from,to){const m={};const g=d=>m[d]||(m[d]={ev:[],tk:[]});
 /* ============ Rendering: notes ============ */
 function noteDetail(n){const desc=descIds(n.id);const chain=[];{let p=getNote(n.parent),g=0;while(p&&g++<12){chain.unshift(p);p=getNote(p.parent)}}const links=S.notes.filter(x=>x.id!==n.id&&x.body.toLowerCase().includes('[['+n.title.toLowerCase()+']]'));const tasks=S.tasks.filter(t=>t.noteId===n.id);
  const tb=(c,l,t)=>`<button data-act="tb" data-c="${c}" title="${t||l}">${l}</button>`;
- return `<div class="ed-top">${chain.length?'<div class="crumb">'+chain.map(p=>'<a data-act="open-note" data-id="'+p.id+'">'+esc(p.title||'Ohne Titel')+'</a>').join(' › ')+' ›</div>':''}<div style="display:flex;gap:8px;align-items:center"><input class="ed-title" id="ntitle" data-nf="title" value="${esc(n.title)}" placeholder="Titel"><button class="iconb" data-act="close-detail" style="display:none" id="nback">${ic('x')}</button></div>
+ return `<div class="ed-top">${chain.length?'<div class="crumb">'+chain.map(p=>'<a data-act="open-note" data-id="'+p.id+'">'+esc(p.title||'Ohne Titel')+'</a>').join(' › ')+' ›</div>':''}<div style="display:flex;gap:8px;align-items:center"><input class="ed-title" id="ntitle" data-nf="title" value="${esc(n.title)}" placeholder="Titel"><button class="iconb nlt" data-act="nl-toggle" title="Notizliste ein-/ausblenden">${ic('list')}</button><button class="iconb" data-act="close-detail" style="display:none" id="nback">${ic('x')}</button></div>
  <div class="ed-meta"><select class="inp" data-nf="parent" title="Übergeordnete Notiz"><option value="">Oberste Ebene</option>${S.notes.filter(x=>x.id!==n.id&&!desc.has(x.id)).map(x=>`<option value="${x.id}" ${n.parent===x.id?'selected':''}>${esc(x.title||'Ohne Titel')}</option>`).join('')}</select><select class="inp" data-nf="area"><option value="">Kein Bereich</option>${S.areas.map(a=>`<option value="${a.id}" ${n.area===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select>
  <input class="inp" data-nf="tags" value="${esc(n.tags.join(', '))}" placeholder="Tags, mit Komma">
  <button class="btn sec2 sm" data-act="new-subnote" data-id="${n.id}">${ic('plus')} Unterseite</button><button class="btn sec2 sm" data-act="pin-note" data-id="${n.id}">${ic('pin')} ${n.pinned?'Angeheftet':'Anheften'}</button>
@@ -686,7 +689,8 @@ function renderDetail(){const d=$('#detail'),vt=viewType();
  if(!ui.sel){if(vt==='notes'){d.className='detail show';d.innerHTML=`<div class="empty" style="margin:auto"><div class="big">${ic('note')}</div><b>Notiz auswählen</b><p>Oder eine neue anlegen.</p><button class="btn" data-act="new-note">${ic('plus')} Neue Notiz</button></div>`}else{d.className='detail';d.innerHTML=''}return}
  d.className='detail show';
  if(ui.sel.type==='task')d.innerHTML=taskDetail(getTask(ui.sel.id));else if(ui.sel.type==='note'){d.innerHTML=noteDetail(getNote(ui.sel.id));if(innerWidth<=640)$('#nback').style.display='grid'}else d.innerHTML=dayDetail(ui.sel.id)}
-function paint(){renderSide();renderCol();renderDetail();$('#main').className='main v-'+viewType()}
+function paint(){renderSide();renderCol();renderDetail();$('#main').className='main v-'+viewType()+(viewType()==='notes'&&nlHidden()?' nl-hide':'')}
+function nlHidden(){return ui.nlHide!=null?ui.nlHide:(innerWidth<=1180&&innerWidth>640&&!!ui.sel&&ui.sel.type==='note')}
 function paintList(){renderSide();renderCol()}
 function applyTheme(){const r=document.documentElement,ind=(S.set.look||'industrial')==='industrial',m=ind?'dark':S.set.theme==='auto'?(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):S.set.theme;r.dataset.mode=m;r.dataset.look=ind?'industrial':'classic';
  if(ind){if(S.set.accentI&&S.set.accentI!=='#ffb400')r.style.setProperty('--accent',S.set.accentI);else r.style.removeProperty('--accent')}else r.style.setProperty('--accent',S.set.accent);
@@ -733,7 +737,7 @@ function taskTabs(){const op=openT(),t=today(),c={inbox:op.filter(x=>!x.due&&!x.
  return `<div class="seg ttabs">${[['today','Heute'],['upcoming','Anstehend'],['inbox','Eingang'],['board','Board']].map(([v,l])=>`<button class="${ui.view===v?'on':''}" data-act="nav" data-v="${v}">${l}${c[v]?`<small>${c[v]}</small>`:''}</button>`).join('')}</div>`}
 function nav(v){if(v==='shop'&&ui.view==='shop')ui.shopList=null;if(TASKMAIN.includes(v)||v.startsWith('area:')||v.startsWith('tag:'))ui.lastTask=v;ui.view=v;ui.sel=null;ui.slash=null;if(v==='calendar')ui.sel={type:'day',id:ui.calSel};if(v==='notes'&&innerWidth>640){const n=S.notes.slice().sort((a,b)=>(b.pinned-a.pinned)||b.updated-a.updated)[0];if(n)ui.sel={type:'note',id:n.id}}paint();if(v==='search')setTimeout(()=>{const i=$('#sq');i&&i.focus()},30)}
 function newNote(title,body,areaId){const n={id:uid(),title:title||'',body:body||'',parent:null,area:areaId!==undefined?areaId:(ui.view.startsWith('area:')?ui.view.slice(5):null),tags:[],pinned:false,created:Date.now(),updated:Date.now()};S.notes.push(n);save();emit('note.created',n);return n}
-function openNote(id){if(ui.view!=='notes')ui.view='notes';ui.sel={type:'note',id};paint()}
+function openNote(id){if(ui.view!=='notes')ui.view='notes';if(innerWidth<=1180)ui.nlHide=null;ui.sel={type:'note',id};paint()}
 function wikilink(title){let n=S.notes.find(x=>x.title.toLowerCase()===title.toLowerCase());if(!n){n=newNote(title,'# '+title+'\n\n');toast('Neue Notiz „'+title+'“ angelegt')}openNote(n.id)}
 function taskFromLine(){const ta=$('#nbody');if(!ta)return;const v=ta.value,p=ta.selectionStart;const a=v.lastIndexOf('\n',p-1)+1;let b=v.indexOf('\n',p);if(b<0)b=v.length;
  const sel=ta.selectionEnd>ta.selectionStart?v.slice(ta.selectionStart,ta.selectionEnd):v.slice(a,b);const title=sel.replace(/^\s*(?:[-*]\s+(?:\[.\]\s+)?|\d+\.\s+|#+\s+|>\s+)/,'').trim();
@@ -755,6 +759,7 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  case 'toggle-task':e.stopPropagation();toggleTask(id);paintList();if(ui.sel&&ui.sel.type==='task')renderDetail();if(ui.sel&&ui.sel.type==='day')renderDetail();break;
  case 'open-task':ui.sel={type:'task',id};paintList();renderDetail();break;
  case 'open-task-from-note':ui.view=getTask(id).area?'area:'+getTask(id).area:'inbox';ui.sel={type:'task',id};paint();break;
+ case 'nl-toggle':ui.nlHide=!nlHidden();paint();break;
  case 'close-detail':ui.sel=viewType()==='cal'?{type:'day',id:ui.calSel}:null;if(viewType()==='cal'&&innerWidth<=1180)ui.sel=null;paintList();renderDetail();break;
  case 'toggle-done':ui.doneOpen=!ui.doneOpen;renderCol();break;
  case 'prio':{const t=getTask(ui.sel.id);t.prio=+v;save();paintList();renderDetail();break}
