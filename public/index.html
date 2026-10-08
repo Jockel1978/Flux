@@ -227,9 +227,14 @@ a.btn{text-decoration:none}
 .agrow .bar{width:4px;border-radius:4px;background:var(--c);flex:none}
 /* notes */
 .nsearch{display:flex;gap:8px;margin-bottom:12px}
-.nitem{padding:12px 14px;border-radius:12px;cursor:pointer;margin-bottom:4px}
+.nsw{position:relative;border-radius:12px;overflow:hidden;margin-bottom:4px}
+.nsw-d,.nsw-a{position:absolute;top:0;bottom:0;width:50%;display:flex;align-items:center;gap:6px;padding:0 18px;font:700 12px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:#fff}
+.nsw-d{left:0;background:#ef4444}.nsw-a{right:0;justify-content:flex-end;background:#d98a00}
+.nsw-d svg{width:18px;height:18px}
+.nitem{position:relative;padding:12px 14px;border-radius:12px;cursor:pointer;background:var(--panel);touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .nitem:hover{background:var(--panel2)}
-.nitem.sel{background:var(--accent-soft)}
+.nitem.sel{background:linear-gradient(var(--accent-soft),var(--accent-soft)),var(--panel)}
+.narch{display:flex;align-items:center;gap:10px;margin:2px 0 10px}.narch .ghost{font-size:13px;font-weight:600;color:var(--accent);padding:4px 2px}.narch .hint{font-size:11.5px}
 .nitem b{display:flex;gap:6px;align-items:center;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nitem p{margin:3px 0 0;color:var(--muted);font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .nitem small{color:var(--muted);font-size:11.5px}
@@ -735,8 +740,25 @@ const refreshModal=()=>{const b=$('#mbox'),k=b?b.scrollTop:0;$('#modal').innerHT
 const TASKMAIN=['inbox','today','upcoming','board'];
 function taskTabs(){const op=openT(),t=today(),c={inbox:op.filter(x=>!x.due&&!x.area).length,today:op.filter(x=>x.due&&x.due<=t).length};
  return `<div class="seg ttabs">${[['today','Heute'],['upcoming','Anstehend'],['inbox','Eingang'],['board','Board']].map(([v,l])=>`<button class="${ui.view===v?'on':''}" data-act="nav" data-v="${v}">${l}${c[v]?`<small>${c[v]}</small>`:''}</button>`).join('')}</div>`}
-function nav(v){if(v==='shop'&&ui.view==='shop')ui.shopList=null;if(TASKMAIN.includes(v)||v.startsWith('area:')||v.startsWith('tag:'))ui.lastTask=v;ui.view=v;ui.sel=null;ui.slash=null;if(v==='calendar')ui.sel={type:'day',id:ui.calSel};if(v==='notes'&&innerWidth>640){const n=S.notes.slice().sort((a,b)=>(b.pinned-a.pinned)||b.updated-a.updated)[0];if(n)ui.sel={type:'note',id:n.id}}paint();if(v==='search')setTimeout(()=>{const i=$('#sq');i&&i.focus()},30)}
+function nav(v){if(v==='shop'&&ui.view==='shop')ui.shopList=null;if(TASKMAIN.includes(v)||v.startsWith('area:')||v.startsWith('tag:'))ui.lastTask=v;ui.view=v;ui.sel=null;ui.slash=null;if(v==='calendar')ui.sel={type:'day',id:ui.calSel};if(v==='notes'&&innerWidth>640){const n=S.notes.filter(n=>!n.arch).sort((a,b)=>(b.pinned-a.pinned)||b.updated-a.updated)[0];if(n)ui.sel={type:'note',id:n.id}}paint();if(v==='search')setTimeout(()=>{const i=$('#sq');i&&i.focus()},30)}
 function newNote(title,body,areaId){const n={id:uid(),title:title||'',body:body||'',parent:null,area:areaId!==undefined?areaId:(ui.view.startsWith('area:')?ui.view.slice(5):null),tags:[],pinned:false,created:Date.now(),updated:Date.now()};S.notes.push(n);save();emit('note.created',n);return n}
+function toastUndo(msg,fn){const d=document.createElement('div');d.style.pointerEvents='auto';d.style.display='flex';d.style.gap='14px';d.style.alignItems='center';const t=document.createElement('span');t.textContent=msg;const b=document.createElement('button');b.textContent='Rückgängig';b.style.cssText='font-weight:700;color:var(--accent,#ffb400);padding:2px 4px';b.onclick=()=>{d.remove();fn()};d.append(t,b);$('#toast').appendChild(d);setTimeout(()=>d.remove(),6000)}
+function noteArch(id){const n=getNote(id);if(!n)return;n.arch=!n.arch;n.updated=Date.now();if(ui.sel&&ui.sel.id===id)ui.sel=null;save();paint();toastUndo(n.arch?'Notiz archiviert':'Notiz wiederhergestellt',()=>{n.arch=!n.arch;n.updated=Date.now();save();paint()})}
+function noteDelUndo(id){const n=getNote(id);if(!n)return;const kids=S.notes.filter(x=>x.parent===id).map(x=>x.id),tl=S.tasks.filter(t=>t.noteId===id).map(t=>t.id),idx=S.notes.indexOf(n);
+ S.notes.forEach(x=>{if(x.parent===id)x.parent=n.parent||null});S.notes=S.notes.filter(x=>x.id!==id);
+ const used=new Set();S.notes.forEach(x=>(x.body.match(/img:(\w+)/g)||[]).forEach(m=>used.add(m.slice(4))));const rm={};Object.keys(S.img).forEach(k=>{if(!used.has(k)){rm[k]=S.img[k];delete S.img[k]}});
+ S.tasks.forEach(t=>{if(t.noteId===id)t.noteId=null});if(ui.sel&&ui.sel.id===id)ui.sel=null;save();paint();
+ toastUndo('Notiz gelöscht',()=>{S.notes.splice(Math.min(idx,S.notes.length),0,n);kids.forEach(k=>{const x=getNote(k);if(x)x.parent=id});tl.forEach(t=>{const x=getTask(t);if(x)x.noteId=id});Object.assign(S.img,rm);save();paint()})}
+(function(){let st=null;
+ document.addEventListener('pointerdown',e=>{const it=e.target.closest&&e.target.closest('#nlist .nitem');if(!it||e.target.closest('.tg')||(e.pointerType==='mouse'&&e.button!==0))return;st={it,id:it.dataset.id,x:e.clientX,y:e.clientY,dx:0,on:false,pid:e.pointerId}});
+ document.addEventListener('pointermove',e=>{if(!st||e.pointerId!==st.pid)return;const dx=e.clientX-st.x,dy=e.clientY-st.y;
+  if(!st.on){if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.5){st.on=true;st.it.style.transition='none';try{st.it.setPointerCapture(e.pointerId)}catch(_){}}else if(Math.abs(dy)>12){st=null;return}else return}
+  st.dx=dx;st.it.style.transform='translateX('+dx+'px)'});
+ const end=e=>{if(!st||e.pointerId!==st.pid)return;const s=st;st=null;if(!s.on)return;suppressClick=Date.now();
+  const th=Math.min(110,s.it.offsetWidth*.3),dx=s.dx;s.it.style.transition='transform .18s';
+  if(Math.abs(dx)>th){s.it.style.transform='translateX('+(dx>0?'100%':'-100%')+')';setTimeout(()=>{dx>0?noteDelUndo(s.id):noteArch(s.id)},180)}
+  else s.it.style.transform=''};
+ document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end)})();
 function openNote(id){if(ui.view!=='notes')ui.view='notes';if(innerWidth<=1180)ui.nlHide=null;ui.sel={type:'note',id};paint()}
 function wikilink(title){let n=S.notes.find(x=>x.title.toLowerCase()===title.toLowerCase());if(!n){n=newNote(title,'# '+title+'\n\n');toast('Neue Notiz „'+title+'“ angelegt')}openNote(n.id)}
 function taskFromLine(){const ta=$('#nbody');if(!ta)return;const v=ta.value,p=ta.selectionStart;const a=v.lastIndexOf('\n',p-1)+1;let b=v.indexOf('\n',p);if(b<0)b=v.length;
@@ -796,6 +818,7 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  case 'note-tpl':sheet(noteTplSheet);break;
  case 'ntpl-use':{const tp=NOTE_TPL[+el.dataset.i],n=newNote(tplFill(tp.title),tplFill(tp.body));closeModal();ui.view='notes';ui.sel={type:'note',id:n.id};paint();break}
  case 'new-subnote':{const p=getNote(id),n=newNote('','',p.area);n.parent=id;ui.collapsed[id]=false;save();ui.view='notes';ui.sel={type:'note',id:n.id};paint();setTimeout(()=>{const i=$('#ntitle');i&&i.focus()},40);break}
+ case 'note-arch-view':ui.narch=!ui.narch;ui.nq='';ui.sel=null;paint();break;
  case 'note-tg':ui.collapsed[id]=!ui.collapsed[id];paintListOnly();break;
  case 'img-pick':{if(!$('#nbody')){toast('Wechsle zu „Schreiben“ oder „Geteilt“');break}const i=$('#imgIn');i&&i.click();break}
  case 'dictate':dictate(el.dataset.t);break;
@@ -1048,15 +1071,16 @@ function noteTplSheet(){return sheetHead('Neue Notiz aus Vorlage')+NOTE_TPL.map(
 
 /* ---- Notizen: Baum ---- */
 function descIds(id){const out=new Set(),walk=(x,g)=>{if(g>12)return;S.notes.filter(n=>n.parent===x).forEach(n=>{out.add(n.id);walk(n.id,g+1)})};walk(id,0);return out}
-function noteItem(n,depth){const a=area(n.area),kids=S.notes.filter(x=>x.parent===n.id),open=!ui.collapsed[n.id];
- return `<div class="nitem ${ui.sel&&ui.sel.id===n.id?'sel':''}" style="padding-left:${12+depth*18}px" data-act="open-note" data-id="${n.id}"><b>${kids.length?`<span class="tg ${open?'open':''}" data-act="note-tg" data-id="${n.id}">${ic('right')}</span>`:''}${n.pinned?ic('pin').replace('class="i"','class="i" style="width:14px;height:14px;color:var(--accent)"'):''}${a?`<span class="dot" style="--c:${a.color};margin:0"></span>`:''}<span style="overflow:hidden;text-overflow:ellipsis">${esc(n.title||'Ohne Titel')}</span></b><p>${esc(plain(n.body).slice(0,140))||'Leere Notiz'}</p><small>${fmtDT(n.updated)}${n.tags.length?' · '+n.tags.map(g=>'#'+esc(g)).join(' '):''}${kids.length?' · '+kids.length+' Unterseite'+(kids.length>1?'n':''):''}</small></div>`}
-function noteItems(){const q=ui.nq.trim().toLowerCase(),sorter=(a,b)=>(b.pinned-a.pinned)||b.updated-a.updated,none='<div class="empty" style="padding:30px 0">Keine Notizen gefunden.</div>';
- if(q)return S.notes.filter(n=>(n.title+' '+n.body+' '+n.tags.join(' ')).toLowerCase().includes(q)).sort(sorter).map(n=>noteItem(n,0)).join('')||none;
- const ids=new Set(S.notes.map(n=>n.id)),roots=S.notes.filter(n=>!n.parent||!ids.has(n.parent)).sort(sorter);
- const walk=(n,d)=>noteItem(n,d)+(ui.collapsed[n.id]||d>10?'':S.notes.filter(x=>x.parent===n.id).sort(sorter).map(c=>walk(c,d+1)).join(''));
+function noteItem(n,depth){const a=area(n.area),kids=ui.narch?[]:S.notes.filter(x=>x.parent===n.id&&!x.arch),open=!ui.collapsed[n.id];
+ return `<div class="nsw"><div class="nsw-d">${ic('trash')} Löschen</div><div class="nsw-a">${ui.narch?'Zurück':'Archiv'}</div><div class="nitem ${ui.sel&&ui.sel.id===n.id?'sel':''}" style="padding-left:${12+depth*18}px" data-act="open-note" data-id="${n.id}"><b>${kids.length?`<span class="tg ${open?'open':''}" data-act="note-tg" data-id="${n.id}">${ic('right')}</span>`:''}${n.pinned?ic('pin').replace('class="i"','class="i" style="width:14px;height:14px;color:var(--accent)"'):''}${a?`<span class="dot" style="--c:${a.color};margin:0"></span>`:''}<span style="overflow:hidden;text-overflow:ellipsis">${esc(n.title||'Ohne Titel')}</span></b><p>${esc(plain(n.body).slice(0,140))||'Leere Notiz'}</p><small>${fmtDT(n.updated)}${n.tags.length?' · '+n.tags.map(g=>'#'+esc(g)).join(' '):''}${kids.length?' · '+kids.length+' Unterseite'+(kids.length>1?'n':''):''}</small></div></div>`}
+function noteItems(){const L=S.notes.filter(n=>!!n.arch===!!ui.narch);const q=ui.nq.trim().toLowerCase(),sorter=(a,b)=>(b.pinned-a.pinned)||b.updated-a.updated,none='<div class="empty" style="padding:30px 0">Keine Notizen gefunden.</div>';
+ if(q)return L.filter(n=>(n.title+' '+n.body+' '+n.tags.join(' ')).toLowerCase().includes(q)).sort(sorter).map(n=>noteItem(n,0)).join('')||none;
+ if(ui.narch)return L.slice().sort((a,b)=>b.updated-a.updated).map(n=>noteItem(n,0)).join('')||'<div class="empty" style="padding:30px 0">Archiv ist leer.</div>';
+ const ids=new Set(L.map(n=>n.id)),roots=L.filter(n=>!n.parent||!ids.has(n.parent)).sort(sorter);
+ const walk=(n,d)=>noteItem(n,d)+(ui.collapsed[n.id]||d>10?'':L.filter(x=>x.parent===n.id).sort(sorter).map(c=>walk(c,d+1)).join(''));
  return roots.map(n=>walk(n,0)).join('')||none}
 function notesColHTML(){return `<div class="head" style="margin-bottom:12px"><h1 style="font-size:24px">Notizen</h1><div style="display:flex;gap:6px"><button class="btn sec2 sm" data-act="note-tpl">${ic('tpl')} Vorlage</button><button class="btn sm" data-act="new-note">${ic('plus')} Neu</button></div></div>
- <div class="nsearch"><input class="inp" id="nq" placeholder="Notizen durchsuchen …" value="${esc(ui.nq)}"></div><div id="nlist">${noteItems()}</div>`}
+ <div class="nsearch"><input class="inp" id="nq" placeholder="Notizen durchsuchen …" value="${esc(ui.nq)}"></div><div class="narch"><button class="ghost" data-act="note-arch-view">${ui.narch?'← Zurück zu Notizen':'Archiv ('+S.notes.filter(n=>n.arch).length+')'}</button><span class="hint" style="margin:0">${ui.narch?'':'Wischen: links = archivieren, rechts = löschen'}</span></div><div id="nlist">${noteItems()}</div>`}
 
 /* ---- Bilder in Notizen ---- */
 function addImage(file){const ta=$('#nbody');if(!ta){toast('Wechsle zu „Schreiben“ oder „Geteilt“');return}
@@ -1142,7 +1166,7 @@ function dashHTML(){shopFix();const t=today(),open=S.tasks.filter(x=>!x.done),to
  const list=[...over.sort((a,b)=>a.due.localeCompare(b.due)),...sortT(todayOpen),...open.filter(x=>!x.due||x.due>t).sort((a,b)=>a.prio-b.prio||b.created-a.created)].slice(0,7);
  const week=[...Array(7)].map((_,i)=>{const d=addDays(t,i);return{d,n:open.filter(x=>x.due===d).length+(i===0?over.length:0),sh:shType(S.shifts.days[d])}}),mx=Math.max(3,...week.map(w=>w.n));
  const dn=['So','Mo','Di','Mi','Do','Fr','Sa'];
- const nl=S.notes.slice().sort((a,b)=>(b.pinned-a.pinned)||b.updated-a.updated).slice(0,5);
+ const nl=S.notes.filter(n=>!n.arch).sort((a,b)=>(b.pinned-a.pinned)||b.updated-a.updated).slice(0,5);
  const shops=S.shop.lists.map(l=>({l,n:l.items.filter(i=>!i.done).length})).filter(x=>x.n).slice(0,8);
  const led=fb.user?`<span class="dled ${fb.state==='err'?'er':fb.state==='sync'?'sy':'ok'}"></span>${fb.state==='err'?'FEHLER':fb.state==='sync'?'SYNC …':'ONLINE'}`:'<span class="dled"></span>LOKAL';
  return `<div class="col-in dashwrap"><div class="dash">
