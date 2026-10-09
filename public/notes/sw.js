@@ -1,5 +1,5 @@
 /* Flux Notizen Service Worker: Netzwerk zuerst, Cache als Offline-Fallback */
-const CACHE = 'fnotes-v1';
+const CACHE = 'fnotes-v2';
 const ASSETS = ['./', 'index.html', '../fb.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
