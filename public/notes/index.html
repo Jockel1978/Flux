@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1114">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Flux Notizen</title>
+<style>
+:root{--bg:#0f1114;--pn:#1b1e23;--pn2:#23272d;--ln:#333840;--tx:#ece9e1;--mt:#8a8f98;--am:#ffb400;--or:#ff6a1a;--ok:#4ade80;--er:#f43f5e;--bl:#4ea1ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:16px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;overscroll-behavior:none}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+#app{height:100dvh;display:flex;flex-direction:column}
+.bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--ln);background:var(--pn);flex:none}
+.brand{display:flex;align-items:center;gap:10px;font:700 13px ui-monospace,Menlo,monospace;letter-spacing:.2em;color:var(--am)}
+.logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--am),var(--or));display:grid;place-items:center;color:#1a1300;font-weight:800}
+.grow{flex:1}
+.ib{min-width:44px;height:44px;border-radius:10px;background:var(--pn2);border:1px solid var(--ln);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;font-size:15px;white-space:nowrap}
+.ib:active{background:#2e333a}.ib.am{background:var(--am);border-color:var(--am);color:#1a1300;font-weight:700}
+.ib small{font:700 11px ui-monospace,monospace;background:var(--am);color:#1a1300;border-radius:9px;padding:1px 6px}
+#scroll{flex:1;overflow:auto;overscroll-behavior:contain;padding:16px 14px 130px}
+.wrap{max-width:860px;margin:0 auto}
+h1{margin:4px 0 14px;font-size:26px}
+.sec{font:700 11px ui-monospace,monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--mt);margin:22px 0 8px}
+.card{background:linear-gradient(180deg,#252930,#1b1e23);border:1px solid var(--ln);border-radius:14px;padding:14px 16px}
+.mrow{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--ln);border-radius:14px;background:var(--pn);margin-bottom:8px;cursor:pointer}
+.mrow:active{background:var(--pn2)}
+.mrow b{display:block;font-size:17px}.mrow small{color:var(--mt)}
+.badge{margin-left:auto;font:700 12px ui-monospace,monospace;background:var(--am);color:#1a1300;border-radius:10px;padding:2px 9px;white-space:nowrap}
+.badge.g{background:var(--pn2);color:var(--mt);border:1px solid var(--ln)}
+input.inp,textarea.inp,input.title{width:100%;background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:11px 12px;outline:0}
+input.inp:focus,textarea.inp:focus,input.title:focus{border-color:var(--am)}
+input.title{font-size:24px;font-weight:700;background:none;border:0;border-bottom:2px solid var(--ln);border-radius:0;padding:6px 2px}
+.meta{display:grid;grid-template-columns:170px 1fr;gap:10px;margin:12px 0}
+.meta label,.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mt)}
+.seg{display:flex;background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:4px;gap:4px;margin:14px 0}
+.seg button{flex:1;padding:11px;border-radius:9px;font-weight:600;color:var(--mt)}
+.seg button.on{background:var(--pn2);color:var(--am)}
+.ln{display:flex;align-items:flex-start;gap:8px;padding:4px 0}
+.ln textarea{flex:1;background:none;border:0;outline:0;resize:none;padding:8px 4px;font-size:17px;line-height:1.4;overflow:hidden;min-height:42px}
+.kic{width:40px;height:42px;flex:none;border-radius:10px;font-size:18px;color:var(--mt);border:1px solid transparent}
+.kic:active{background:var(--pn2)}
+.k-t .kic{color:var(--am)}.k-d .kic{color:var(--ok)}.k-q .kic{color:var(--bl)}
+.k-d textarea{font-weight:600}.k-q textarea{color:#b9d9ff}
+.cb{-webkit-appearance:none;appearance:none;width:28px;height:28px;margin:7px 2px 0;flex:none;border-radius:8px;border:2px solid #5a616b;background:#15181c;display:grid;place-items:center;cursor:pointer}
+.cb:checked{background:var(--am);border-color:var(--am)}
+.cb:checked::after{content:'';width:7px;height:13px;border:solid #1a1300;border-width:0 3px 3px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.cb.done+textarea,.done textarea{text-decoration:line-through;color:var(--mt)}
+.xb{width:36px;height:42px;flex:none;color:#5a616b;font-size:20px;border-radius:10px}.xb:active{color:var(--er)}
+.dock{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(0deg,var(--bg) 70%,transparent);display:flex;justify-content:center;pointer-events:none;z-index:5}
+.dock .in{pointer-events:auto;display:flex;gap:8px;overflow-x:auto;max-width:100%;padding:8px;background:var(--pn);border:1px solid var(--ln);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.chip{height:46px;padding:0 14px;border-radius:12px;background:var(--pn2);border:1px solid var(--ln);white-space:nowrap;font-weight:600;display:inline-flex;align-items:center;gap:6px;flex:none}
+.chip:active{background:#2e333a}.chip.ai{background:linear-gradient(135deg,var(--am),var(--or));color:#1a1300;border:0}
+.inkb{margin:12px 0;border:1px solid var(--ln);border-radius:14px;overflow:hidden;background:var(--pn)}
+.inktb{display:flex;gap:6px;padding:8px;overflow-x:auto;align-items:center;border-bottom:1px solid var(--ln)}
+.tl{width:42px;height:42px;border-radius:10px;border:2px solid transparent;background:var(--pn2);display:grid;place-items:center;flex:none;font-size:18px}
+.tl.on{border-color:var(--am)}
+.dot{width:20px;height:20px;border-radius:50%;display:block}
+.inkw{background:#fff;position:relative}
+canvas{display:block;width:100%;touch-action:none;cursor:crosshair}
+.fld input,.fld select{background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:10px 11px;color:var(--tx);font-size:16px;outline:0;width:100%}
+.res h3{font:700 12px ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--am);margin:22px 0 8px}
+.res textarea.inp{min-height:90px;resize:vertical;font-size:16px}
+.rl{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.rl input.inp{flex:1;min-width:0}
+.rl .o{width:120px;flex:none}.rl .dd{width:132px;flex:none}
+.tr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;padding:8px;border:1px solid var(--ln);border-radius:12px;background:var(--pn)}
+.tr .cb{margin:0}.tr input.inp{flex:1;min-width:150px}
+.add{color:var(--mt);padding:10px 4px;font-weight:600}
+.note{color:var(--mt);font-size:14px;margin:8px 0}
+.banner{border:1px dashed var(--ln);border-radius:14px;padding:14px;color:var(--mt);margin-bottom:10px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:14px;z-index:30}
+.box{width:min(640px,100%);max-height:92dvh;overflow:auto;background:var(--pn);border:1px solid var(--ln);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.box h2{margin:0;font-size:19px}
+.box pre{white-space:pre-wrap;word-break:break-word;background:#15181c;border:1px solid var(--ln);border-radius:10px;padding:10px;max-height:34dvh;overflow:auto;font:13px/1.45 ui-monospace,Menlo,monospace;margin:0;user-select:text}
+.btns{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.btn{height:46px;padding:0 18px;border-radius:12px;background:var(--pn2);border:1px solid var(--ln);font-weight:600}
+.btn.am{background:var(--am);color:#1a1300;border:0;font-weight:700}
+.chk{display:flex;gap:10px;align-items:center;font-size:15px}.chk input{width:22px;height:22px;accent-color:var(--am)}
+.err{color:var(--er);font-size:14px}.hint{color:var(--mt);font-size:13px}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+#toast div{background:#2b3037;border:1px solid #3a4048;padding:10px 16px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.empty{text-align:center;color:var(--mt);padding:40px 10px}
+.spin{width:22px;height:22px;border:3px solid var(--ln);border-top-color:var(--am);border-radius:50%;animation:sp .8s linear infinite;display:inline-block;vertical-align:middle}@keyframes sp{to{transform:rotate(360deg)}}
+@media (max-width:560px){.meta{grid-template-columns:1fr}.rl .o,.rl .dd{width:100%}.rl{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="ovh"></div>
+<div id="toast"></div>
+<script src="../fb.js" defer></script>
+<script>
+'use strict';
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
+const ls={g:k=>{try{return localStorage.getItem(k)}catch(e){return null}},s:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+const todayS=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const fmtD=s=>{if(!s)return'';const p=String(s).split('-');return p.length===3?p[2]+'.'+p[1]+'.'+p[0]:s};
+function toast(t){const d=document.createElement('div');d.textContent=t;$('#toast').appendChild(d);setTimeout(()=>d.remove(),3000)}
+
+/* ---------- Daten ---------- */
+let S;try{S=JSON.parse(ls.g('fnotes-v1')||'{}')}catch(e){S={}}
+S.meetings=S.meetings||[];S.set=Object.assign({hide:'',pat:true,key:'',finger:false},S.set||{});
+const ui={view:'home',id:null,tab:'mit',q:''};
+let saveT=null;const dirty=new Set(),gone=new Set(),known=new Set();
+const persist=()=>ls.s('fnotes-v1',JSON.stringify(S));
+function touch(m){m.updated=Date.now();dirty.add(m.id);clearTimeout(saveT);saveT=setTimeout(()=>{persist();push()},500)}
+const getM=id=>S.meetings.find(m=>m.id===id);
+const KIND={n:{ic:'•',lb:'Notiz'},t:{ic:'☐',lb:'Aufgabe'},d:{ic:'✔',lb:'Beschluss'},q:{ic:'?',lb:'Frage'}};
+const KORDER=['n','t','d','q'];
+function newMeeting(){const m={id:uid(),title:'',date:todayS(),people:'',b:[{id:uid(),k:'n',txt:''}],r:null,created:Date.now(),updated:Date.now()};S.meetings.unshift(m);touch(m);return m}
+
+/* Ergebnis: aus KI/Bearbeitung (m.r) oder lokal aus der Mitschrift */
+function localResult(m){const L=m.b.filter(b=>b.k!=='ink'&&(b.txt||'').trim());
+  return{summary:L.filter(b=>b.k==='n').map(b=>b.txt.trim()).join('\n'),decisions:L.filter(b=>b.k==='d').map(b=>b.txt.trim()),
+    todos:L.filter(b=>b.k==='t').map(b=>({id:b.id,text:b.txt.trim(),owner:'',due:'',done:!!b.done,_b:b})),questions:L.filter(b=>b.k==='q').map(b=>b.txt.trim())}}
+const resultOf=m=>m.r||localResult(m);
+function todosOf(m){return m.r?m.r.todos:m.b.filter(b=>b.k==='t'&&(b.txt||'').trim()).map(b=>({id:b.id,text:b.txt,done:!!b.done,_b:b}))}
+function findTodo(m,id){let t=m.r&&m.r.todos.find(x=>x.id===id);if(t)return t;return m.b.find(b=>b.id===id)}
+const openCount=m=>todosOf(m).filter(t=>!t.done).length;
+
+/* ---------- Cloud-Sync (gleiches Login wie Flux) ---------- */
+const cloud={u:null,unsub:null,state:'off'};
+function pushOne(id){const m=getM(id);if(!m||!cloud.u)return Promise.resolve();const j=JSON.stringify(m);if(j.length>950000){toast('Seite zu groß für die Cloud – weniger Handschrift pro Termin');return Promise.resolve()}
+  return FBX.putDoc(cloud.u.uid,'meetings',id,{json:j,ts:m.updated})}
+function push(){if(!cloud.u||!window.FBX)return;const ids=[...dirty];dirty.clear();cloud.state='sync';paintTop();
+  Promise.all([...ids.map(pushOne),...[...gone].map(id=>FBX.delDocU(cloud.u.uid,'meetings',id).then(()=>gone.delete(id)))]).then(()=>{cloud.state='ok';paintTop()}).catch(e=>{ids.forEach(i=>dirty.add(i));cloud.state='err';paintTop();console.warn(e)})}
+function startSync(u){if(cloud.unsub){cloud.unsub();cloud.unsub=null}cloud.u=u;if(!u){cloud.state='off';paintTop();return}
+  cloud.state='sync';paintTop();
+  cloud.unsub=FBX.watchCol(u.uid,'meetings',(docs,meta)=>{let ch=false;const rid=new Set();
+    docs.forEach(d=>{rid.add(d.id);let r;try{r=JSON.parse(d.data.json)}catch(e){return}if(gone.has(d.id))return;const l=getM(d.id);known.add(d.id);
+      if(!l){S.meetings.push(r);ch=true}else if((r.updated||0)>(l.updated||0)){Object.assign(l,r);ch=true}});
+    if(!meta.fromCache){S.meetings=S.meetings.filter(m=>{if(known.has(m.id)&&!rid.has(m.id)&&!dirty.has(m.id)){ch=true;return false}return true});
+      S.meetings.forEach(m=>{if(!rid.has(m.id)&&!known.has(m.id))dirty.add(m.id)})}
+    S.meetings.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.created-a.created);
+    if(ch){persist();if(!ae()||ui.view!=='meet')render()}if(dirty.size)push();else{cloud.state='ok';paintTop()}},
+    e=>{cloud.state='err';paintTop();console.warn(e)})}
+const ae=()=>{const a=document.activeElement;return a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')};
+function boot(){if(window.FBX){FBX.onUser(u=>startSync(u))}}
+window.addEventListener('fbx-ready',boot);if(window.FBX)boot();
+
+/* ---------- Ansichten ---------- */
+const app=$('#app');
+function topBar(){const n=S.meetings.reduce((a,m)=>a+openCount(m),0);
+  return `<div class="bar"><div class="brand"><span class="logo">N</span>FLUX NOTIZEN</div><div class="grow"></div><span id="sy" class="hint"></span><button class="ib" data-a="tasks">☑ Aufgaben${n?` <small>${n}</small>`:''}</button><button class="ib" data-a="settings" aria-label="Einstellungen">⚙</button></div>`}
+function paintTop(){const e=$('#sy');if(e)e.textContent=cloud.state==='sync'?'sync …':cloud.state==='err'?'Sync-Fehler':cloud.state==='ok'?'●':''}
+function render(){history.state&&0;if(ui.view==='home')homeV();else if(ui.view==='tasks')tasksV();else meetV();paintTop()}
+function homeV(){const q=ui.q.trim().toLowerCase();
+  const L=S.meetings.filter(m=>!q||(m.title+' '+m.people+' '+m.b.map(b=>b.txt||'').join(' ')).toLowerCase().includes(q));
+  app.innerHTML=topBar()+`<div id="scroll"><div class="wrap"><button class="ib am" data-a="new" style="width:100%;height:56px;font-size:18px;margin-bottom:12px">＋ Neuer Termin</button>
+   <input class="inp" id="q" placeholder="Termine durchsuchen …" value="${esc(ui.q)}"><div class="sec">Termine</div><div id="ml">${mlist(L)}</div></div></div>`}
+function mlist(L){if(!L.length)return `<div class="empty">Noch nichts da.<br>Tippe auf „Neuer Termin“ und leg los.</div>`;
+  return L.map(m=>{const o=openCount(m);return `<div class="mrow" data-a="open" data-id="${m.id}"><div style="min-width:0"><b>${esc(m.title||'Ohne Titel')}</b><small>${fmtD(m.date)}${m.people?' · '+esc(m.people):''}</small></div>${o?`<span class="badge">${o} offen</span>`:todosOf(m).length?`<span class="badge g">✓ erledigt</span>`:''}</div>`}).join('')}
+function tasksV(){const gr=S.meetings.map(m=>({m,t:todosOf(m).filter(t=>!t.done)})).filter(x=>x.t.length);
+  app.innerHTML=topBar().replace('data-a="tasks"','data-a="home"').replace('☑ Aufgaben','← Termine')+`<div id="scroll"><div class="wrap"><h1>Offene Aufgaben</h1>${gr.length?gr.map(x=>`<div class="sec" data-a="open" data-id="${x.m.id}" style="cursor:pointer">${esc(x.m.title||'Ohne Titel')} · ${fmtD(x.m.date)}</div>${x.t.map(t=>`<div class="tr"><input type="checkbox" class="cb" data-a="tdone" data-m="${x.m.id}" data-id="${t.id}"><span style="flex:1;min-width:140px">${esc(t.text)}</span>${t.owner?`<span class="hint">${esc(t.owner)}</span>`:''}${t.due?`<span class="badge g">${esc(fmtDue(t.due))}</span>`:''}</div>`).join('')}`).join(''):'<div class="empty">Alles erledigt. 🎉</div>'}</div></div>`}
+const fmtDue=d=>/^\d{4}-\d{2}-\d{2}$/.test(d)?fmtD(d):d;
+
+function meetV(){const m=getM(ui.id);if(!m){ui.view='home';render();return}
+  app.innerHTML=`<div class="bar"><button class="ib" data-a="home">←</button><div class="grow"></div><button class="ib" data-a="del-m" aria-label="Termin löschen">🗑</button><button class="ib am" data-a="share">⇪ Teilen</button></div>
+  <div id="scroll"><div class="wrap"><input class="title" id="mt" placeholder="Titel des Termins" value="${esc(m.title)}">
+  <div class="meta"><label class="fld">Datum<input type="date" id="md" value="${esc(m.date)}"></label><label class="fld">Teilnehmer<input id="mp" placeholder="Anna, Ben, …" value="${esc(m.people)}"></label></div>
+  <div class="seg"><button data-a="tab" data-v="mit" class="${ui.tab==='mit'?'on':''}">Mitschrift</button><button data-a="tab" data-v="erg" class="${ui.tab==='erg'?'on':''}">Ergebnis${openCount(m)?` (${openCount(m)} offen)`:''}</button></div>
+  <div id="body">${ui.tab==='mit'?mitHTML(m):ergHTML(m)}</div></div></div>
+  ${ui.tab==='mit'?`<div class="dock"><div class="in">${KORDER.map(k=>`<button class="chip" data-a="addln" data-k="${k}">${KIND[k].ic} ${KIND[k].lb}</button>`).join('')}<button class="chip" data-a="addink">✎ Stift</button><button class="chip ai" data-a="ai">✨ Aufräumen</button></div></div>`:''}`;
+  if(ui.tab==='mit'){autoGrowAll();initInks(m)}}
+function mitHTML(m){return m.b.map(b=>b.k==='ink'?inkHTML(b):lnHTML(b)).join('')}
+function lnHTML(b){const k=b.k;return `<div class="ln k-${k} ${b.done?'done':''}" data-id="${b.id}"><button class="kic" data-a="kind" title="Art ändern">${KIND[k].ic==='☐'?'▢':KIND[k].ic}</button>${k==='t'?`<input type="checkbox" class="cb" data-a="chk" ${b.done?'checked':''}>`:''}<textarea rows="1" data-f="txt" placeholder="${KIND[k].lb} …" spellcheck="true">${esc(b.txt)}</textarea><button class="xb" data-a="delln" aria-label="Zeile löschen">×</button></div>`}
+function autoGrow(t){t.style.height='auto';t.style.height=Math.max(42,t.scrollHeight)+'px'}
+const autoGrowAll=()=>$$('.ln textarea').forEach(autoGrow);
+
+/* Ergebnis */
+function ergHTML(m){const ed=!!m.r,r=resultOf(m),ro=ed?'':'readonly';
+  const lines=(arr,f)=>arr.map((t,i)=>`<div class="rl"><input class="inp" data-f="${f}" data-i="${i}" value="${esc(t)}" ${ro}>${ed?`<button class="xb" data-a="rdel" data-f="${f}" data-i="${i}">×</button>`:''}</div>`).join('');
+  const todos=r.todos.map(t=>`<div class="tr"><input type="checkbox" class="cb" data-a="tdone" data-m="${m.id}" data-id="${t.id}" ${t.done?'checked':''}>${ed?`<input class="inp" data-f="ttext" data-id="${t.id}" value="${esc(t.text)}"><input class="inp o" data-f="towner" data-id="${t.id}" placeholder="Wer?" value="${esc(t.owner||'')}"><input class="inp dd" data-f="tdue" data-id="${t.id}" placeholder="Bis wann?" value="${esc(t.due||'')}"><button class="xb" data-a="tdel" data-id="${t.id}">×</button>`:`<span style="flex:1;min-width:140px">${esc(t.text)}</span>`}</div>`).join('');
+  return `<div class="res">${ed?'':`<div class="banner">Das ist eine Vorschau direkt aus deiner Mitschrift. Mit <b>✨ Aufräumen</b> macht die KI daraus ein verständliches Protokoll. Oder übernimm es und bearbeite es selbst.<div class="btns" style="margin-top:10px;justify-content:flex-start"><button class="btn am" data-a="ai">✨ Mit KI aufräumen</button><button class="btn" data-a="adopt">Übernehmen &amp; bearbeiten</button></div></div>`}
+  <h3>Zusammenfassung</h3><textarea class="inp" data-f="sum" ${ro} placeholder="Kurz und verständlich …">${esc(r.summary)}</textarea>
+  <h3>Beschlüsse</h3>${lines(r.decisions,'dec')||'<div class="hint">Keine.</div>'}${ed?`<button class="add" data-a="radd" data-f="dec">＋ Beschluss</button>`:''}
+  <h3>Aufgaben</h3>${todos||'<div class="hint">Keine.</div>'}${ed?`<button class="add" data-a="tadd">＋ Aufgabe</button>`:''}
+  <h3>Offene Fragen</h3>${lines(r.questions,'que')||'<div class="hint">Keine.</div>'}${ed?`<button class="add" data-a="radd" data-f="que">＋ Frage</button>`:''}
+  ${ed?`<div class="btns" style="margin-top:18px"><button class="btn" data-a="ai">✨ Neu aufräumen</button><button class="btn" data-a="rreset">Zurück zur Mitschrift</button></div>`:''}</div>`}
+
+/* ---------- Stift ---------- */
+const pen={tool:'pen',color:'#111827'};const PENS=[['#111827','Schwarz'],['#1d4ed8','Blau'],['#dc2626','Rot']];
+function inkHTML(b){return `<div class="inkb" data-id="${b.id}"><div class="inktb">${PENS.map(p=>`<button class="tl ${pen.tool==='pen'&&pen.color===p[0]?'on':''}" data-a="pen" data-c="${p[0]}" aria-label="${p[1]}"><span class="dot" style="background:${p[0]}"></span></button>`).join('')}<button class="tl ${pen.tool==='hl'?'on':''}" data-a="hl" aria-label="Marker"><span class="dot" style="background:#fde047"></span></button><button class="tl ${pen.tool==='er'?'on':''}" data-a="eraser" aria-label="Radierer">⌫</button><button class="tl" data-a="undo" aria-label="Rückgängig">↶</button><button class="tl" data-a="inkh" aria-label="Fläche größer">⇣</button><span class="grow"></span><button class="tl" data-a="delink" aria-label="Fläche löschen">🗑</button></div><div class="inkw"><canvas></canvas></div></div>`}
+function inkRedraw(cv,b){const W=cv.clientWidth||600,s=W/1000,dpr=window.devicePixelRatio||1;const hh=Math.round((b.h||700)*s);
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(hh*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(hh*dpr);cv.style.height=hh+'px'}
+  const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,W,hh);
+  (b.s||[]).forEach(st=>drawStroke(c,st,s))}
+function drawStroke(c,st,s){const p=st.p;if(!p.length)return;c.lineCap='round';c.lineJoin='round';
+  if(st.k==='hl'){c.globalAlpha=.35;c.strokeStyle=st.c;c.lineWidth=st.w*s;c.beginPath();c.moveTo(p[0]*s,p[1]*s);for(let i=3;i<p.length;i+=3)c.lineTo(p[i]*s,p[i+1]*s);if(p.length===3)c.lineTo(p[0]*s+.1,p[1]*s);c.stroke();c.globalAlpha=1;return}
+  c.strokeStyle=st.c;c.fillStyle=st.c;
+  if(p.length===3){c.beginPath();c.arc(p[0]*s,p[1]*s,Math.max(.8,st.w*s*(.4+p[2]/100)/2),0,7);c.fill();return}
+  for(let i=3;i<p.length;i+=3){c.lineWidth=Math.max(.6,st.w*s*(.4+((p[i+2]+p[i-1])/200)));c.beginPath();c.moveTo(p[i-3]*s,p[i-2]*s);c.lineTo(p[i]*s,p[i+1]*s);c.stroke()}}
+function initInks(m){$$('.inkb').forEach(el=>{const b=m.b.find(x=>x.id===el.dataset.id),cv=$('canvas',el);if(!b)return;b.s=b.s||[];inkRedraw(cv,b);attachInk(cv,b,m,el)})}
+function attachInk(cv,b,m,el){let cur=null,tch=null,hist=[];el._hist=hist;
+  const pt=e=>{const r=cv.getBoundingClientRect(),s=1000/r.width;return[Math.round((e.clientX-r.left)*s),Math.round((e.clientY-r.top)*s),Math.round((e.pressure||.5)*100)]};
+  const snap=()=>{hist.push(JSON.stringify(b.s));if(hist.length>40)hist.shift()};
+  const erase=(x,y)=>{const R=26;const n=b.s.length;b.s=b.s.filter(st=>{for(let i=0;i<st.p.length;i+=3){const dx=st.p[i]-x,dy=st.p[i+1]-y;if(dx*dx+dy*dy<R*R)return false}return true});return b.s.length!==n};
+  cv.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='touch'&&!S.set.finger){tch={y:e.clientY};cv.setPointerCapture(e.pointerId);return}
+    e.preventDefault();cv.setPointerCapture(e.pointerId);const p=pt(e);const er=pen.tool==='er'||(e.buttons&32);snap();
+    if(er){cur={er:true,ch:erase(p[0],p[1])};if(cur.ch)inkRedraw(cv,b)}
+    else{cur={st:{k:pen.tool==='hl'?'hl':'pen',c:pen.tool==='hl'?'#fde047':pen.color,w:pen.tool==='hl'?26:3.2,p:[...p]},id:e.pointerId};b.s.push(cur.st);inkRedraw(cv,b)}});
+  cv.addEventListener('pointermove',e=>{
+    if(tch){const sc=$('#scroll');sc.scrollTop-=e.clientY-tch.y;tch.y=e.clientY;return}
+    if(!cur)return;const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
+    if(cur.er){evs.forEach(ev=>{const p=pt(ev);if(erase(p[0],p[1])){cur.ch=true}});if(cur.ch)inkRedraw(cv,b);return}
+    const st=cur.st;evs.forEach(ev=>{const p=pt(ev),n=st.p.length;if(n>=3){const dx=p[0]-st.p[n-3],dy=p[1]-st.p[n-2];if(dx*dx+dy*dy<1.2)return}st.p.push(...p)});inkRedraw(cv,b)});
+  const end=e=>{if(tch){tch=null;return}if(!cur)return;const c=cur;cur=null;if(c.er&&!c.ch)hist.pop();touch(m)};
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+  cv.addEventListener('contextmenu',e=>e.preventDefault());
+  el._undo=()=>{if(!hist.length)return;b.s=JSON.parse(hist.pop());inkRedraw(cv,b);touch(m)}}
+addEventListener('resize',()=>{if(ui.view==='meet'&&ui.tab==='mit'){const m=getM(ui.id);if(!m)return;$$('.inkb').forEach(el=>{const b=m.b.find(x=>x.id===el.dataset.id);if(b)inkRedraw($('canvas',el),b)})}});
+
+/* ---------- Aktionen ---------- */
+function openMeeting(id){ui.view='meet';ui.id=id;ui.tab='mit';history.pushState({v:'meet'},'');render()}
+function goHome(){if(history.state&&history.state.v==='meet'){history.back();return}ui.view='home';render()}
+addEventListener('popstate',()=>{if(ui.view!=='home'){ui.view='home';render()}});
+function addLine(m,k,afterId,txt){const b={id:uid(),k,txt:txt||'',done:false};const i=afterId?m.b.findIndex(x=>x.id===afterId):m.b.length-1;m.b.splice(i+1,0,b);touch(m);return b}
+function focusLn(id,end){const t=$(`.ln[data-id="${id}"] textarea`);if(!t)return;t.focus();if(end!==false){t.selectionStart=t.selectionEnd=t.value.length}setTimeout(()=>t.scrollIntoView({block:'center',behavior:'smooth'}),50)}
+function redrawMit(){const m=getM(ui.id);$('#body').innerHTML=mitHTML(m);autoGrowAll();initInks(m)}
+document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const a=el.dataset.a,m=getM(ui.id);
+  const ln=el.closest('.ln'),lb=ln&&m&&m.b.find(b=>b.id===ln.dataset.id),inkEl=el.closest('.inkb'),ib=inkEl&&m&&m.b.find(b=>b.id===inkEl.dataset.id);
+  switch(a){
+   case 'new':{const n=newMeeting();openMeeting(n.id);setTimeout(()=>{const t=$('#mt');t&&t.focus()},60);break}
+   case 'open':openMeeting(el.dataset.id);break;
+   case 'home':if(ui.view==='tasks'){ui.view='home';render()}else goHome();break;
+   case 'tasks':ui.view='tasks';render();break;
+   case 'settings':settingsSheet();break;
+   case 'tab':ui.tab=el.dataset.v;meetV();break;
+   case 'addln':{const k=el.dataset.k,last=m.b[m.b.length-1];let b;if(last&&last.k!=='ink'&&!(last.txt||'').trim()){last.k=k;b=last;touch(m)}else b=addLine(m,k);redrawMit();focusLn(b.id);break}
+   case 'addink':{const b={id:uid(),k:'ink',h:700,s:[]};m.b.push(b);touch(m);redrawMit();const x=$(`.inkb[data-id="${b.id}"]`);x&&x.scrollIntoView({block:'center',behavior:'smooth'});if(!window.__penHint){window.__penHint=1;toast('Mit dem Stift schreiben, mit dem Finger scrollen')}break}
+   case 'kind':if(lb){lb.k=KORDER[(KORDER.indexOf(lb.k)+1)%4];touch(m);redrawMit();focusLn(lb.id,false)}break;
+   case 'chk':if(lb){lb.done=el.checked;touch(m);ln.classList.toggle('done',lb.done)}break;
+   case 'delln':if(lb){m.b=m.b.filter(b=>b!==lb);if(!m.b.length)m.b.push({id:uid(),k:'n',txt:''});touch(m);redrawMit()}break;
+   case 'pen':pen.tool='pen';pen.color=el.dataset.c;$$('.inktb').forEach(tb=>$$('.tl',tb).forEach(t=>t.classList.remove('on')));$$(`.tl[data-a="pen"][data-c="${pen.color}"]`).forEach(t=>t.classList.add('on'));break;
+   case 'hl':case 'eraser':pen.tool=a==='hl'?'hl':'er';$$('.inktb .tl').forEach(t=>t.classList.remove('on'));$$(`.tl[data-a="${a}"]`).forEach(t=>t.classList.add('on'));break;
+   case 'undo':inkEl&&inkEl._undo&&inkEl._undo();break;
+   case 'inkh':if(ib){ib.h=(ib.h||700)+400;touch(m);inkRedraw($('canvas',inkEl),ib)}break;
+   case 'delink':if(ib&&confirm('Diese Stiftfläche löschen?')){m.b=m.b.filter(b=>b!==ib);touch(m);redrawMit()}break;
+   case 'del-m':if(confirm('Diesen Termin löschen?')){S.meetings=S.meetings.filter(x=>x!==m);dirty.delete(m.id);gone.add(m.id);known.delete(m.id);persist();push();ui.view='home';if(history.state&&history.state.v==='meet')history.back();else render()}break;
+   case 'tdone':{const mm=getM(el.dataset.m)||m,t=findTodo(mm,el.dataset.id);if(t){t.done=el.checked;touch(mm);if(ui.view==='tasks')setTimeout(render,200);else{const tr=el.closest('.tr');}}break}
+   case 'adopt':m.r=Object.assign({},localResult(m));m.r.todos=m.r.todos.map(t=>({id:t.id,text:t.text,owner:'',due:'',done:t.done}));touch(m);meetV();break;
+   case 'rreset':if(confirm('Bearbeitetes Ergebnis verwerfen und wieder aus der Mitschrift anzeigen?')){m.r=null;touch(m);meetV()}break;
+   case 'radd':{const f=el.dataset.f==='dec'?'decisions':'questions';m.r[f].push('');touch(m);meetV();const ii=$$(`[data-f="${el.dataset.f}"]`);ii.length&&ii[ii.length-1].focus();break}
+   case 'rdel':{const f=el.dataset.f==='dec'?'decisions':'questions';m.r[f].splice(+el.dataset.i,1);touch(m);meetV();break}
+   case 'tadd':m.r.todos.push({id:uid(),text:'',owner:'',due:'',done:false});touch(m);meetV();{const ii=$$('[data-f="ttext"]');ii.length&&ii[ii.length-1].focus()}break;
+   case 'tdel':m.r.todos=m.r.todos.filter(t=>t.id!==el.dataset.id);touch(m);meetV();break;
+   case 'ai':aiSheet(m);break;
+   case 'share':shareSheet(m);break;
+   case 'close-ov':if(e.target===el)closeOv();break;
+  }});
+document.addEventListener('input',e=>{const el=e.target,m=getM(ui.id);if(!m&&el.id!=='q')return;
+  if(el.id==='q'){ui.q=el.value;$('#ml').innerHTML=mlist(S.meetings.filter(m=>!ui.q.trim()||(m.title+' '+m.people+' '+m.b.map(b=>b.txt||'').join(' ')).toLowerCase().includes(ui.q.trim().toLowerCase())));return}
+  if(el.id==='mt'){m.title=el.value;touch(m);return}if(el.id==='md'){m.date=el.value;touch(m);return}if(el.id==='mp'){m.people=el.value;touch(m);return}
+  const f=el.dataset.f;if(!f)return;
+  if(f==='txt'){const b=m.b.find(x=>x.id===el.closest('.ln').dataset.id);if(b){b.txt=el.value;autoGrow(el);touch(m)}return}
+  if(!m.r)return;
+  if(f==='sum')m.r.summary=el.value;else if(f==='dec')m.r.decisions[+el.dataset.i]=el.value;else if(f==='que')m.r.questions[+el.dataset.i]=el.value;
+  else{const t=m.r.todos.find(x=>x.id===el.dataset.id);if(t){if(f==='ttext')t.text=el.value;else if(f==='towner')t.owner=el.value;else if(f==='tdue')t.due=el.value}}
+  touch(m)});
+document.addEventListener('beforeinput',e=>{const el=e.target;if(!el.matches||!el.matches('.ln textarea'))return;const m=getM(ui.id),row=el.closest('.ln'),b=m&&m.b.find(x=>x.id===row.dataset.id);if(!b)return;
+  if(e.inputType==='insertParagraph'||e.inputType==='insertLineBreak'){e.preventDefault();
+    if(!el.value.trim()&&b.k!=='n'){b.k='n';touch(m);redrawMit();focusLn(b.id);return}
+    const off=el.selectionStart,left=el.value.slice(0,off),right=el.value.slice(off);b.txt=left.trimEnd();const nb=addLine(m,b.k,b.id,right.trimStart());redrawMit();focusLn(nb.id,false);const t=$(`.ln[data-id="${nb.id}"] textarea`);if(t)t.selectionStart=t.selectionEnd=0}
+  else if(e.inputType==='deleteContentBackward'&&!el.value&&m.b.length>1){e.preventDefault();const i=m.b.indexOf(b);m.b.splice(i,1);touch(m);redrawMit();const p=m.b[Math.max(0,i-1)];if(p&&p.k!=='ink')focusLn(p.id)}});
+
+/* ---------- Dialoge ---------- */
+function ov(html){closeOv();const d=document.createElement('div');d.className='ov';d.dataset.a='close-ov';d.innerHTML=`<div class="box">${html}</div>`;$('#ovh').appendChild(d);return d}
+function closeOv(){$('#ovh').innerHTML=''}
+function settingsSheet(){const u=cloud.u;
+  const d=ov(`<h2>Einstellungen</h2>
+  <label class="fld">Namen &amp; Begriffe ausblenden (einer pro Zeile) – werden vor dem Senden an die KI durch Platzhalter ersetzt<textarea class="inp" id="s-hide" rows="5" placeholder="Pizzeria Roma&#10;Max Mustermann">${esc(S.set.hide)}</textarea></label>
+  <label class="chk"><input type="checkbox" id="s-pat" ${S.set.pat?'checked':''}> E-Mail-Adressen, Telefonnummern und IBAN automatisch ausblenden</label>
+  <label class="fld">KI-Zugangsschlüssel (hast du bei Cloudflare als FLUX_KEY gesetzt)<input type="password" id="s-key" class="inp" value="${esc(S.set.key)}" autocomplete="off"></label>
+  <label class="chk"><input type="checkbox" id="s-fin" ${S.set.finger?'checked':''}> Auch mit dem Finger zeichnen (sonst scrollt der Finger, nur der Stift zeichnet)</label>
+  <div class="hint">${u?`Angemeldet als ${esc(u.email||u.displayName||'')} – Termine synchronisieren sich.`:'Nicht angemeldet – Termine bleiben nur auf diesem Gerät.'}</div>
+  <div class="btns">${u?`<button class="btn" id="s-out">Abmelden</button>`:`<button class="btn" id="s-in">Anmelden</button>`}<button class="btn am" id="s-ok">Speichern</button></div>`);
+  $('#s-ok',d).onclick=()=>{S.set.hide=$('#s-hide').value;S.set.pat=$('#s-pat').checked;S.set.key=$('#s-key').value.trim();S.set.finger=$('#s-fin').checked;persist();closeOv()};
+  const o=$('#s-out',d);if(o)o.onclick=()=>{FBX.logout();closeOv()};const i=$('#s-in',d);if(i)i.onclick=loginSheet}
+function loginSheet(){const d=ov(`<h2>Anmelden</h2><div class="hint">Gleiches Konto wie in Flux.</div><button class="btn am" id="l-g">Mit Google anmelden</button>
+  <input class="inp" id="l-m" type="email" placeholder="E-Mail" autocomplete="username"><input class="inp" id="l-p" type="password" placeholder="Passwort" autocomplete="current-password"><div class="err" id="l-e"></div>
+  <div class="btns"><button class="btn" id="l-x">Abbrechen</button><button class="btn" id="l-r">Registrieren</button><button class="btn am" id="l-l">Anmelden</button></div>`);
+  const run=f=>{if(!window.FBX){$('#l-e').textContent='Cloud nicht erreichbar.';return}f().then(()=>closeOv()).catch(e=>{$('#l-e').textContent=({'auth/invalid-credential':'E-Mail oder Passwort falsch.','auth/email-already-in-use':'Diese E-Mail gibt es schon.','auth/weak-password':'Passwort zu kurz (min. 6 Zeichen).','auth/popup-closed-by-user':'Abgebrochen.','auth/unauthorized-domain':'Domain nicht autorisiert (Firebase → Authentication → Einstellungen).'})[e.code]||('Fehler: '+(e.code||e.message))})};
+  $('#l-g',d).onclick=()=>run(()=>FBX.google());$('#l-l',d).onclick=()=>run(()=>FBX.login($('#l-m').value.trim(),$('#l-p').value));$('#l-r',d).onclick=()=>run(()=>FBX.register($('#l-m').value.trim(),$('#l-p').value));$('#l-x',d).onclick=closeOv}
+
+/* ---------- Ausblenden (Datenschutz) ---------- */
+function anonymize(text){const map={};let n=0;const put=(tag,val)=>{for(const k in map)if(map[k]===val)return k;const key='⟦'+tag+(++n)+'⟧';map[key]=val;return key};
+  S.set.hide.split('\n').map(s=>s.trim()).filter(s=>s.length>1).sort((a,b)=>b.length-a.length).forEach(t=>{text=text.replace(new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),mm=>put('K',mm))});
+  if(S.set.pat){text=text.replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g,mm=>put('MAIL',mm)).replace(/\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{4}){3,7}(?:\s?[A-Z0-9]{1,4})?\b/g,mm=>put('IBAN',mm)).replace(/(?:\+|00)?\d[\d\s\/().-]{7,}\d/g,mm=>/^\d{1,2}\.\d{1,2}\.\d{2,4}$|^\d{4}-\d{2}-\d{2}$/.test(mm.trim())?mm:put('TEL',mm))}
+  return{text,map}}
+const restore=(s,map)=>{if(typeof s!=='string')return s;for(const k in map)s=s.split(k).join(map[k]);return s};
+
+/* ---------- KI ---------- */
+function rawText(m){const lab={n:'-',t:'[Aufgabe]',d:'[Beschluss]',q:'[Frage]'};return `Titel: ${m.title||'(ohne)'}\nDatum: ${fmtD(m.date)}\nTeilnehmer: ${m.people||'(unbekannt)'}\n\nNotizen:\n`+m.b.filter(b=>b.k!=='ink'&&(b.txt||'').trim()).map(b=>`${lab[b.k]} ${b.txt.trim()}`).join('\n')}
+function inkImages(m){const out=[];m.b.filter(b=>b.k==='ink'&&b.s&&b.s.length).slice(0,4).forEach(b=>out.push(inkPNG(b,1000,'image/jpeg')));return out}
+function inkPNG(b,W,type){const s=W/1000,cv=document.createElement('canvas');cv.width=W;cv.height=Math.round((b.h||700)*s);const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);(b.s||[]).forEach(st=>drawStroke(c,st,s));return cv.toDataURL(type||'image/png',.82)}
+function aiSheet(m){const hasInk=m.b.some(b=>b.k==='ink'&&b.s&&b.s.length),hasTxt=m.b.some(b=>b.k!=='ink'&&(b.txt||'').trim());
+  if(!hasInk&&!hasTxt){toast('Erst etwas mitschreiben');return}
+  if(!S.set.key){toast('Erst den KI-Zugangsschlüssel in den Einstellungen eintragen');settingsSheet();return}
+  const a=anonymize(rawText(m));
+  const d=ov(`<h2>✨ Aufräumen mit KI</h2><div class="hint">Das wird an die KI gesendet. Ausgeblendete Namen erscheinen als Platzhalter (⟦K1⟧ …) und kommen im Ergebnis wieder zurück.</div><pre>${esc(a.text)}</pre>
+   ${hasInk?`<label class="chk"><input type="checkbox" id="a-ink"> Handschrift-Flächen mitsenden (die KI liest sie mit – <b>Namen darin werden NICHT ausgeblendet</b>)</label>`:''}
+   <div class="err" id="a-e"></div><div class="btns"><button class="btn" id="a-x">Abbrechen</button><button class="btn am" id="a-go">Senden</button></div>`);
+  $('#a-x',d).onclick=closeOv;
+  $('#a-go',d).onclick=async()=>{const btn=$('#a-go',d);btn.innerHTML='<span class="spin"></span>';btn.disabled=true;$('#a-e').textContent='';
+    try{const imgs=hasInk&&$('#a-ink').checked?inkImages(m):[];
+      if(!hasTxt&&!imgs.length)throw new Error('Nur Handschrift vorhanden – bitte „Handschrift mitsenden“ ankreuzen.');
+      const res=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json','X-Flux-Key':S.set.key},body:JSON.stringify({text:a.text,images:imgs})});
+      const j=await res.json().catch(()=>({}));if(!res.ok||!j.r)throw new Error(res.status===401?'Zugangsschlüssel falsch.':res.status===500&&j.error?j.error:'KI-Fehler ('+res.status+')'+(j.error?': '+j.error:''));
+      const r=j.r,mp=a.map,arr=x=>(Array.isArray(x)?x:[]).map(s=>restore(String(s),mp));
+      m.r={summary:restore(String(r.summary||''),mp),decisions:arr(r.decisions),questions:arr(r.questions),todos:(Array.isArray(r.todos)?r.todos:[]).map(t=>({id:uid(),text:restore(String(t.text||''),mp),owner:restore(String(t.owner||''),mp),due:restore(String(t.due||''),mp),done:false}))};
+      touch(m);closeOv();ui.tab='erg';meetV();toast('Fertig – bitte kurz prüfen')}
+    catch(e){btn.disabled=false;btn.textContent='Nochmal senden';$('#a-e').textContent=String(e.message||e)}}}
+
+/* ---------- Teilen: PDF & Text ---------- */
+function shareSheet(m){const hasInk=m.b.some(b=>b.k==='ink'&&b.s&&b.s.length);
+  const d=ov(`<h2>Teilen</h2>${hasInk?`<label class="chk"><input type="checkbox" id="h-ink"> Handschrift im PDF anhängen</label>`:''}
+   <div class="btns" style="justify-content:stretch"><button class="btn am" id="h-pdf" style="flex:1">📄 Als PDF</button><button class="btn" id="h-txt" style="flex:1">📋 Text kopieren</button></div>
+   <div class="hint">PDF: im Druckdialog „Als PDF speichern“ wählen, dann in Teams anhängen. Text: kompakt, direkt in den Teams-Chat einfügbar.</div>`);
+  $('#h-pdf',d).onclick=()=>{const wi=hasInk&&$('#h-ink').checked;closeOv();printPDF(m,wi)};
+  $('#h-txt',d).onclick=async()=>{const t=teamsText(m);try{await navigator.clipboard.writeText(t);toast('Text kopiert')}catch(e){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Text kopiert')}catch(_){toast('Kopieren nicht möglich')}ta.remove()}closeOv()}}
+function teamsText(m){const r=resultOf(m),o=[];o.push(`📋 ${m.title||'Termin'} · ${fmtD(m.date)}`);if(m.people)o.push(`👥 ${m.people}`);
+  if(r.summary.trim())o.push('',r.summary.trim());
+  const dec=r.decisions.filter(x=>x.trim());if(dec.length){o.push('','✅ Beschlüsse',...dec.map(x=>'• '+x.trim()))}
+  const td=r.todos.filter(t=>(t.text||'').trim());if(td.length){o.push('','☑ Aufgaben',...td.map(t=>`${t.done?'☑':'☐'} ${t.text.trim()}${t.owner?' — '+t.owner:''}${t.due?' (bis '+fmtDue(t.due)+')':''}`))}
+  const qu=r.questions.filter(x=>x.trim());if(qu.length){o.push('','❓ Offen',...qu.map(x=>'• '+x.trim()))}
+  return o.join('\n')}
+function printPDF(m,withInk){const r=resultOf(m),e=esc,P=s=>e(s).replace(/\n/g,'<br>');
+  const li=a=>a.filter(x=>x.trim()).map(x=>`<li>${e(x.trim())}</li>`).join('');
+  const td=r.todos.filter(t=>(t.text||'').trim());
+  const inks=withInk?m.b.filter(b=>b.k==='ink'&&b.s&&b.s.length).map(b=>`<img class="ink" src="${inkPNG(b,1400,'image/png')}">`).join(''):'';
+  const html=`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${e(m.title||'Termin')}</title><style>
+  @page{size:A4;margin:16mm 16mm 18mm}*{box-sizing:border-box}body{margin:0;font:11pt/1.5 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1c1f24}
+  .top{display:flex;align-items:center;gap:10px;border-bottom:3px solid #ffb400;padding-bottom:8px;margin-bottom:16px}.lg{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#ffb400,#ff6a1a);color:#1a1300;font-weight:800;display:grid;place-items:center;font-size:14px}
+  .br{font:700 9pt ui-monospace,Menlo,monospace;letter-spacing:.2em;color:#9a6a00}h1{font-size:21pt;margin:0 0 4px;line-height:1.2}.meta{color:#5c6470;font-size:10pt;margin-bottom:14px}
+  h2{font:700 9pt ui-monospace,Menlo,monospace;letter-spacing:.18em;text-transform:uppercase;color:#9a6a00;margin:18px 0 6px;border-bottom:1px solid #e6e8ec;padding-bottom:3px}
+  p{margin:0 0 6px}ul{margin:0;padding-left:18px}li{margin-bottom:3px}table{width:100%;border-collapse:collapse}td{padding:6px 6px;border-bottom:1px solid #eceef2;vertical-align:top}td.b{width:22px}.bx{display:inline-block;width:13px;height:13px;border:1.6px solid #1c1f24;border-radius:3px;position:relative}.bx.on::after{content:'✓';position:absolute;left:1px;top:-4px;font-size:12pt;color:#9a6a00;font-weight:700}
+  td.w{width:26%;color:#5c6470;font-size:10pt}td.d{width:18%;color:#5c6470;font-size:10pt}.done{text-decoration:line-through;color:#8a8f98}
+  .ink{width:100%;border:1px solid #e0e3e8;border-radius:6px;margin:6px 0;page-break-inside:avoid}.ft{position:fixed;bottom:0;left:0;right:0;font-size:8pt;color:#8a8f98;display:flex;justify-content:space-between}
+  </style></head><body><div class="top"><div class="lg">N</div><div class="br">FLUX NOTIZEN</div></div>
+  <h1>${e(m.title||'Termin')}</h1><div class="meta">${fmtD(m.date)}${m.people?' · '+e(m.people):''}</div>
+  ${r.summary.trim()?`<h2>Zusammenfassung</h2><p>${P(r.summary.trim())}</p>`:''}
+  ${li(r.decisions)?`<h2>Beschlüsse</h2><ul>${li(r.decisions)}</ul>`:''}
+  ${td.length?`<h2>Aufgaben</h2><table>${td.map(t=>`<tr><td class="b"><span class="bx ${t.done?'on':''}"></span></td><td class="${t.done?'done':''}">${e(t.text.trim())}</td><td class="w">${e(t.owner||'')}</td><td class="d">${e(fmtDue(t.due||''))}</td></tr>`).join('')}</table>`:''}
+  ${li(r.questions)?`<h2>Offene Fragen</h2><ul>${li(r.questions)}</ul>`:''}
+  ${inks?`<h2>Handschriftliche Notizen</h2>${inks}`:''}
+  <div class="ft"><span>Erstellt mit Flux Notizen</span><span>${fmtD(todayS())}</span></div></body></html>`;
+  const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
+  fr.srcdoc=html;fr.onload=()=>{setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){toast('Drucken nicht möglich')}setTimeout(()=>fr.remove(),60000)},300)}}
+
+/* ---------- Start ---------- */
+S.meetings.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.created-a.created);
+render();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>

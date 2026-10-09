@@ -595,7 +595,7 @@ function renderSide(){const t=today(),op=openT();
  const tagCount={};[...S.tasks.filter(x=>!x.done),...S.notes].forEach(x=>(x.tags||[]).forEach(g=>tagCount[g]=(tagCount[g]||0)+1));
  const tags=Object.entries(tagCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
  $('#side').innerHTML=`<div class="brand"><div class="logo">${ic('bolt')}</div><b class="label">Flux</b></div>
- ${nav('dash','dash','Übersicht')}<button class="nav ${TASKMAIN.includes(ui.view)?'on':''}" data-act="nav" data-v="${ui.lastTask||'today'}" title="Aufgaben">${ic('sun')}<span class="label">Aufgaben</span>${cnt.today?`<em>${cnt.today}</em>`:''}</button>${nav('notes','note','Notizen')}${nav('calendar','cal','Kalender')}${nav('shifts','rota','Dienstplan')}${nav('shop','cart','Einkauf')}
+ ${nav('dash','dash','Übersicht')}<button class="nav ${TASKMAIN.includes(ui.view)?'on':''}" data-act="nav" data-v="${ui.lastTask||'today'}" title="Aufgaben">${ic('sun')}<span class="label">Aufgaben</span>${cnt.today?`<em>${cnt.today}</em>`:''}</button>${nav('calendar','cal','Kalender')}${nav('shifts','rota','Dienstplan')}${nav('shop','cart','Einkauf')}
   <button class="nav acctb" data-act="acct" title="Konto &amp; Sync">${ic('user')}<span class="label">${fb.user?esc((fb.user.displayName||fb.user.email||'Konto').split(/[ @]/)[0]):'Anmelden'}</span>${fb.user?`<em style="color:${fb.state==='err'?'#ef4444':fb.state==='sync'?'#f59e0b':'#10b981'};background:none">●</em>`:''}</button>
  <button class="nav" data-act="settings" title="Einstellungen">${ic('set')}<span class="label">Einstellungen</span></button>
  <div class="sec">Bereiche</div>
@@ -689,7 +689,7 @@ const SLASH=[['Überschrift 1','# ',0],['Überschrift 2','## ',0],['Überschrift
 
 /* ============ Rendering: search ============ */
 function searchRes(q){q=q.trim().toLowerCase();if(!q)return '<p class="hint" style="padding:20px 4px">Tippe, um Aufgaben und Notizen zu durchsuchen.</p>';
- const ts=S.tasks.filter(t=>(t.title+' '+t.desc+' '+t.tags.join(' ')).toLowerCase().includes(q)).slice(0,40),ns=S.notes.filter(n=>(n.title+' '+n.body+' '+n.tags.join(' ')).toLowerCase().includes(q)).slice(0,40);
+ const ts=S.tasks.filter(t=>(t.title+' '+t.desc+' '+t.tags.join(' ')).toLowerCase().includes(q)).slice(0,40),ns=[];
  return `${ts.length?`<div class="grp"><h3>Aufgaben<span>${ts.length}</span></h3><div class="card">${ts.map(taskRow).join('')}</div></div>`:''}${ns.length?`<div class="grp"><h3>Notizen<span>${ns.length}</span></h3><div class="card" style="padding:6px">${ns.map(n=>`<div class="nitem" data-act="open-note" data-id="${n.id}"><b>${esc(n.title||'Ohne Titel')}</b><p>${esc(plain(n.body).slice(0,160))}</p></div>`).join('')}</div></div>`:''}${!ts.length&&!ns.length?'<div class="empty">Nichts gefunden.</div>':''}`}
 function searchHTML(){return `<div class="col-in"><div class="head"><h1>Suche</h1></div><div class="qa">${ic('search')}<input id="sq" placeholder="Aufgaben & Notizen durchsuchen …" value="${esc(ui.q)}"></div><div id="sres">${searchRes(ui.q)}</div></div>`}
 
@@ -1204,7 +1204,7 @@ function dashHTML(){shopFix();const t=today(),open=S.tasks.filter(x=>!x.done),to
   <section class="dp"><h5>Anstehend</h5>${evs.length?evs.slice(0,6).map(x=>`<div class="dr"${evAttr(x.e)}><span class="dt">${x.e.allDay?'GANZ':esc(x.e.time)}<small>${esc(dlabel(x.d))}</small></span><i style="--c:${x.e.color||'#ffb400'}"></i><div><b>${esc(x.e.title)}</b>${x.e.loc?`<small>${esc(x.e.loc)}</small>`:''}</div></div>`).join(''):'<p class="dempty">Keine Termine in den nächsten 7 Tagen.</p>'}<button class="dlink" data-act="ev-new" data-v="${t}">+ Termin</button></section>
   </div>
   <section class="dp w6"><h5>Einkauf</h5>${shops.length?`<div class="dshops">${shops.map(x=>`<button data-act="dash-shop" data-id="${x.l.id}"><span style="--c:${x.l.color}">${esc(x.l.name.slice(0,2))}</span><b>${esc(x.l.name)}</b><em>${x.n}</em></button>`).join('')}</div>`:'<p class="dempty">Alle Einkaufslisten sind leer.</p>'}</section>
-  <section class="dp w6"><h5>Notizen</h5>${nl.length?nl.map(n=>`<div class="dr" data-act="dash-note" data-id="${n.id}" style="cursor:pointer"><div style="flex:1;min-width:0"><b>${n.pinned?ic('pin').replace('<svg','<svg style="width:13px;height:13px;vertical-align:-2px;color:var(--am);margin-right:4px"'):''}${esc(n.title||'Ohne Titel')}</b><small>${esc(noteSnip(n))}</small></div></div>`).join(''):'<p class="dempty">Noch keine Notizen.</p>'}<button class="dlink" data-act="new-note">+ Neue Notiz</button></section>
+  <section class="dp w6"><h5>Termin-Notizen</h5><p class="dempty">Mitschreiben, aufräumen, als PDF teilen.</p><a class="dlink" href="notes/" style="display:block;text-decoration:none">ÖFFNEN →</a></section>
  </div></div></div>`}
 let wakeLock=null;
 async function setKiosk(on){ui.kiosk=on;document.body.classList.toggle('kiosk',on);
