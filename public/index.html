@@ -1404,7 +1404,7 @@ applyTheme();matchMedia('(prefers-color-scheme:dark)').addEventListener&&matchMe
 shopFix();intake();paint();fbBoot();
 setInterval(checkReminders,30000);setTimeout(checkReminders,3000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkReminders()});autoFeeds();setInterval(autoFeeds,900000);
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
-window.addEventListener('resize',()=>{if(viewType()==='notes')renderDetail()});
+let lastW=innerWidth;window.addEventListener('resize',()=>{if(innerWidth===lastW)return;lastW=innerWidth;if(viewType()==='notes'){const ae=document.activeElement;if(ae&&(ae.id==='nbody'||ae.id==='ntitle'||ae.isContentEditable))return;renderDetail()}});
 </script>
 </body>
 </html>
