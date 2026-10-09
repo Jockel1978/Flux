@@ -264,8 +264,13 @@ a.btn{text-decoration:none}
 .md p{margin:.5em 0}
 .md ul,.md ol{padding-left:1.4em;margin:.5em 0}
 .md ul.tl{list-style:none;padding-left:0}
-.md ul.tl li{display:flex;gap:10px;align-items:flex-start;padding:3px 0}
-.md ul.tl input{width:19px;height:19px;margin-top:3px;accent-color:var(--accent)}
+.md ul.tl li{display:flex;gap:12px;align-items:center;padding:6px 0}
+.md ul.tl input{-webkit-appearance:none;appearance:none;width:24px;height:24px;margin:0;flex:none;border-radius:50%;border:2px solid var(--p4);background:transparent;cursor:pointer;display:grid;place-items:center}
+.md ul.tl input:checked{background:var(--accent);border-color:var(--accent)}
+.md ul.tl input:checked::after{content:'';width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.md .tx{flex:1;min-width:40px;outline:0;padding:3px 0;word-break:break-word;-webkit-user-select:text;user-select:text;cursor:text}
+.md .tx:empty::before{content:'Neuer Punkt';color:var(--muted)}
+.md .tl-add{color:var(--muted);cursor:pointer;padding:8px 0 8px 36px;font-size:14px}.md .tl-add small{margin-left:auto;font-size:12px}
 .md li.done span{text-decoration:line-through;color:var(--muted)}
 .md blockquote{margin:.7em 0;padding:.2em 1em;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 8px 8px 0}
 .md code{background:var(--panel2);padding:2px 6px;border-radius:6px;font:.9em ui-monospace,Menlo,monospace}
@@ -482,9 +487,9 @@ function inline(s){const codes=[];s=esc(s).replace(/`([^`]+)`/g,(_,c)=>{codes.pu
   .replace(/\[([^\]]+)\]\(((?:https?:|mailto:|tel:)[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
   .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,'$1<a href="$2" target="_blank" rel="noopener">$2</a>');
  return s.replace(/\u0000(\d+)\u0000/g,(_,i)=>`<code>${codes[i]}</code>`)}
-function md(src){const L=String(src||'').split('\n'),out=[];let list=null,inCode=false,code=[];
- const close=()=>{if(list){out.push(`</${list.split(' ')[0]}>`);list=null}};
- const open=k=>{if(list!==k){close();out.push(k==='ul tl'?'<ul class="tl">':'<'+k+'>');list=k}};
+function md(src,edit){const L=String(src||'').split('\n'),out=[];let list=null,inCode=false,code=[],lastTl=-1,tlDone=0,tlAll=0;
+ const close=()=>{if(list){if(edit&&list==='ul tl')out.push(`<li class="tl-add" data-act="tl-add" data-line="${lastTl}">+ Punkt hinzufügen<small>${tlDone}/${tlAll}</small></li>`);out.push(`</${list.split(' ')[0]}>`);list=null}};
+ const open=k=>{if(list!==k){close();if(k==='ul tl'){tlDone=0;tlAll=0}out.push(k==='ul tl'?'<ul class="tl">':'<'+k+'>');list=k}};
  for(let n=0;n<L.length;n++){const l=L[n];let m;
   if(/^```/.test(l)){if(inCode){out.push('<pre><code>'+esc(code.join('\n'))+'</code></pre>');code=[];inCode=false}else{close();inCode=true}continue}
   if(inCode){code.push(l);continue}
@@ -494,7 +499,7 @@ function md(src){const L=String(src||'').split('\n'),out=[];let list=null,inCode
   if(m=l.match(/^(#{1,3})\s+(.*)/)){close();out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`);continue}
   if(/^-{3,}\s*$/.test(l)){close();out.push('<hr>');continue}
   if(m=l.match(/^>\s?(.*)/)){close();out.push(`<blockquote>${inline(m[1])}</blockquote>`);continue}
-  if(m=l.match(/^\s*[-*]\s+\[( |x|X)\]\s+(.*)/)){open('ul tl');const d=m[1]!==' ';out.push(`<li class="${d?'done':''}"><input type="checkbox" data-line="${n}" ${d?'checked':''}><span>${inline(m[2])}</span></li>`);continue}
+  if(m=l.match(/^\s*[-*]\s+\[( |x|X)\]\s+(.*)/)){open('ul tl');const d=m[1]!==' ';lastTl=n;tlAll++;if(d)tlDone++;out.push(`<li class="${d?'done':''}"><input type="checkbox" data-line="${n}" ${d?'checked':''}>${edit?`<span class="tx" contenteditable="plaintext-only" spellcheck="true" data-line="${n}">${inline(m[2])}</span>`:`<span>${inline(m[2])}</span>`}</li>`);continue}
   if(m=l.match(/^\s*[-*]\s+(.*)/)){open('ul');out.push(`<li>${inline(m[1])}</li>`);continue}
   if(m=l.match(/^\s*\d+\.\s+(.*)/)){open('ol');out.push(`<li>${inline(m[1])}</li>`);continue}
   if(!l.trim()){close();continue}
@@ -677,7 +682,7 @@ function noteDetail(n){const desc=descIds(n.id);const chain=[];{let p=getNote(n.
  <button class="btn sec2 sm" data-act="note-md" data-id="${n.id}">${ic('down')} .md</button><button class="btn sec2 sm" title="Als Markdown kopieren" data-act="note-copy" data-id="${n.id}">${ic('copy')}</button><button class="btn sec2 sm" data-act="note-share" data-id="${n.id}">${ic('share')}</button><button class="btn danger sm" data-act="del-note" data-id="${n.id}">${ic('trash')}</button></div>
  <div class="tb">${tb('h1','H1','Überschrift 1')}${tb('h2','H2','Überschrift 2')}<span class="sep"></span>${tb('bold','<b>B</b>','Fett')}${tb('italic','<i>I</i>','Kursiv')}${tb('code','&lt;/&gt;','Code')}<span class="sep"></span>${tb('ul',ic('list'),'Liste')}${tb('todo',ic('check'),'Checkliste')}${tb('quote','❝','Zitat')}${tb('wiki',ic('link'),'Notiz verlinken [[ ]]')}${tb('totask',ic('task'),'Zeile als Aufgabe anlegen')}${tb('table',ic('table'),'Tabelle')}<button data-act="img-pick" title="Bild einfügen">${ic('image')}</button><button data-act="dictate" data-t="note" title="Diktieren">${ic('mic')}</button><input type="file" accept="image/*" id="imgIn" hidden>
  <div class="seg" style="width:250px"><button class="${ui.nmode==='edit'?'on':''}" data-act="nmode" data-v="edit">Schreiben</button><button class="${ui.nmode==='split'?'on':''}" data-act="nmode" data-v="split">Geteilt</button><button class="${ui.nmode==='view'?'on':''}" data-act="nmode" data-v="view">Lesen</button></div></div></div>
- <div class="ed-wrap ${ui.nmode}" id="edwrap">${ui.nmode!=='view'?`<textarea id="nbody" data-nf="body" placeholder="Schreib los … tippe / für Blöcke" spellcheck="true">${esc(n.body)}</textarea>`:''}${ui.nmode!=='edit'?`<div class="pv md" id="npv">${md(n.body)}</div>`:''}<div id="slash"></div></div>
+ <div class="ed-wrap ${ui.nmode}" id="edwrap">${ui.nmode!=='view'?`<textarea id="nbody" data-nf="body" placeholder="Schreib los … tippe / für Blöcke" spellcheck="true">${esc(n.body)}</textarea>`:''}${ui.nmode!=='edit'?`<div class="pv md" id="npv">${md(n.body,ui.nmode==='view')}</div>`:''}<div id="slash"></div></div>
  ${links.length||tasks.length?`<div class="ed-foot">${tasks.length?`<div class="blk"><h4>Verknüpfte Aufgaben</h4>${tasks.map(t=>`<div class="lk" data-act="open-task-from-note" data-id="${t.id}">${t.done?'✓':'○'} ${esc(t.title)}</div>`).join('')}</div>`:''}${links.length?`<div class="blk"><h4>Verlinkt von</h4>${links.map(x=>`<div class="lk" data-act="open-note" data-id="${x.id}">${ic('note')} ${esc(x.title)}</div>`).join('')}</div>`:''}</div>`:''}`}
 function renderSlash(){const el=$('#slash');if(!el)return;if(!ui.slash){el.innerHTML='';el.className='';return}el.className='slash';el.innerHTML=ui.slash.items.map((it,i)=>`<button class="${i===ui.slash.idx?'on':''}" data-act="slash-pick" data-i="${i}">${it[0]}</button>`).join('')}
 const SLASH=[['Überschrift 1','# ',0],['Überschrift 2','## ',0],['Überschrift 3','### ',0],['Aufgabenliste','- [ ] ',0],['Liste','- ',0],['Nummerierte Liste','1. ',0],['Zitat','> ',0],['Codeblock','```\n\n```',4],['Trennlinie','---\n',0],['Heutiges Datum',()=>new Date().toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric'}),0],['Notiz verlinken','[[]]',2]];
@@ -759,13 +764,27 @@ function noteDelUndo(id){const n=getNote(id);if(!n)return;const kids=S.notes.fil
   if(Math.abs(dx)>th){s.it.style.transform='translateX('+(dx>0?'100%':'-100%')+')';setTimeout(()=>{dx>0?noteDelUndo(s.id):noteArch(s.id)},180)}
   else s.it.style.transform=''};
  document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end)})();
+const TLRE=/^(\s*[-*]\s+)\[(?: |x|X)\]\s+(.*)/;
+function tlFocus(line,end){const pv=$('#npv');if(!pv)return;const el=pv.querySelector('.tx[data-line="'+line+'"]');if(!el)return;el.focus();const r=document.createRange();r.selectNodeContents(el);r.collapse(!end);const sl=getSelection();sl.removeAllRanges();sl.addRange(r);el.scrollIntoView({block:'nearest'})}
+function tlSave(n,L){n.body=L.join('\n');n.updated=Date.now();save();const pv=$('#npv');if(pv)pv.innerHTML=md(n.body,ui.nmode==='view')}
+function tlInsert(after){const n=ui.sel&&ui.sel.type==='note'&&getNote(ui.sel.id);if(!n)return;if(ui.nmode!=='view'){ui.nmode='view';renderDetail()}const L=n.body.split('\n');let at,pre='- [ ] ';
+ if(after==null){let last=-1;L.forEach((l,i)=>{if(TLRE.test(l))last=i});if(last>=0){at=last+1;pre=L[last].match(TLRE)[1]+'[ ] '}else{while(L.length&&!L[L.length-1].trim())L.pop();if(L.length)L.push('');at=L.length}}
+ else{at=after+1;const m=L[after]&&L[after].match(TLRE);if(m)pre=m[1]+'[ ] '}
+ L.splice(at,0,pre);tlSave(n,L);tlFocus(at,false)}
+document.addEventListener('focusin',e=>{const el=e.target;if(!el.classList||!el.classList.contains('tx'))return;const n=ui.sel&&getNote(ui.sel.id);if(!n)return;const m=(n.body.split('\n')[+el.dataset.line]||'').match(TLRE);if(m&&el.textContent!==m[2])el.textContent=m[2]});
+document.addEventListener('focusout',e=>{const el=e.target;if(!el.classList||!el.classList.contains('tx'))return;setTimeout(()=>{const a=document.activeElement;if(a&&a.classList&&a.classList.contains('tx'))return;const n=ui.sel&&getNote(ui.sel.id),pv=$('#npv');if(n&&pv&&ui.nmode==='view')pv.innerHTML=md(n.body,true)},0)});
+document.addEventListener('beforeinput',e=>{const el=e.target;if(!el.classList||!el.classList.contains('tx'))return;const n=ui.sel&&getNote(ui.sel.id);if(!n)return;const i=+el.dataset.line,L=n.body.split('\n'),m=(L[i]||'').match(TLRE);if(!m)return;
+ if(e.inputType==='insertParagraph'||e.inputType==='insertLineBreak'){e.preventDefault();const txt=el.textContent;if(!txt.trim()){L[i]='';tlSave(n,L);return}
+  const sl=getSelection();let off=txt.length;if(sl.rangeCount&&el.contains(sl.anchorNode))off=sl.anchorOffset;off=Math.min(off,txt.length);
+  const done=/\[(x|X)\]/.test(L[i].slice(0,m[1].length+4));L[i]=m[1]+(done?'[x] ':'[ ] ')+txt.slice(0,off).trimEnd();L.splice(i+1,0,m[1]+'[ ] '+txt.slice(off).trimStart());tlSave(n,L);tlFocus(i+1,false)}
+ else if(e.inputType==='deleteContentBackward'&&!el.textContent){e.preventDefault();L.splice(i,1);const pm=i>0&&TLRE.test(L[i-1]||'');tlSave(n,L);if(pm)tlFocus(i-1,true)}});
 function openNote(id){if(ui.view!=='notes')ui.view='notes';if(innerWidth<=1180)ui.nlHide=null;ui.sel={type:'note',id};paint()}
 function wikilink(title){let n=S.notes.find(x=>x.title.toLowerCase()===title.toLowerCase());if(!n){n=newNote(title,'# '+title+'\n\n');toast('Neue Notiz „'+title+'“ angelegt')}openNote(n.id)}
 function taskFromLine(){const ta=$('#nbody');if(!ta)return;const v=ta.value,p=ta.selectionStart;const a=v.lastIndexOf('\n',p-1)+1;let b=v.indexOf('\n',p);if(b<0)b=v.length;
  const sel=ta.selectionEnd>ta.selectionStart?v.slice(ta.selectionStart,ta.selectionEnd):v.slice(a,b);const title=sel.replace(/^\s*(?:[-*]\s+(?:\[.\]\s+)?|\d+\.\s+|#+\s+|>\s+)/,'').trim();
  if(!title){toast('Markiere eine Zeile oder setze den Cursor hinein');return}const n=ui.sel&&getNote(ui.sel.id);(()=>{const q=parseQuick(title);addTask({title:q.title,due:q.due,time:q.time,prio:q.prio,tags:q.tags,noteId:n?n.id:null,area:n?n.area:null})})();toast('Aufgabe angelegt: '+title.slice(0,40));paintListOnly()}
 function paintListOnly(){renderSide();if(viewType()!=='notes')renderCol();else{const l=$('#nlist');if(l)l.innerHTML=noteItems()}}
-function tbCmd(c){const ta=$('#nbody');if(!ta){toast('In den Schreib-Modus wechseln');return}ta.focus();const v=ta.value;let s=ta.selectionStart,e=ta.selectionEnd;
+function tbCmd(c){const ta=$('#nbody');if(!ta){if(c==='todo'&&ui.sel&&ui.sel.type==='note'){tlInsert(null);return}toast('In den Schreib-Modus wechseln');return}ta.focus();const v=ta.value;let s=ta.selectionStart,e=ta.selectionEnd;
  const wrap=(a,b)=>{ta.setRangeText(a+v.slice(s,e)+b,s,e,'end');if(s===e)ta.selectionStart=ta.selectionEnd=s+a.length};
  const line=pre=>{const a=v.lastIndexOf('\n',s-1)+1;ta.setRangeText(pre,a,a,'end');ta.selectionStart=ta.selectionEnd=s+pre.length};
  ({h1:()=>line('# '),h2:()=>line('## '),bold:()=>wrap('**','**'),italic:()=>wrap('*','*'),code:()=>wrap('`','`'),ul:()=>line('- '),todo:()=>line('- [ ] '),quote:()=>line('> '),wiki:()=>wrap('[[',']]'),totask:()=>taskFromLine(),table:()=>{const a=v.lastIndexOf('\n',s-1)+1,pre=(a===s?'':'\n'),tbl='| Spalte 1 | Spalte 2 | Spalte 3 |\n| --- | --- | --- |\n|  |  |  |\n|  |  |  |\n';ta.setRangeText(pre+tbl,s,e,'end')}})[c]();
@@ -803,6 +822,7 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  case 'note-share':{const n=getNote(id);shareText(n.title,n.body);break}
  case 'nmode':ui.nmode=v;renderDetail();break;
  case 'tb':tbCmd(el.dataset.c);break;
+ case 'tl-add':tlInsert(+el.dataset.line);break;
  case 'slash-pick':e.preventDefault();pickSlash(+el.dataset.i);break;
  case 'wikilink':e.preventDefault();wikilink(el.dataset.t);break;
  case 'cal-prev':case 'cal-next':{const k=a==='cal-next'?1:-1;if(ui.calMode==='week')ui.calDate=addDays(ui.calDate,7*k);else{const d=pd(ui.calDate);d.setDate(1);d.setMonth(d.getMonth()+k);ui.calDate=ymd(d)}renderCol();break}
@@ -816,7 +836,7 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  case 'tpl-del':S.templates=S.templates.filter(x=>x.id!==id);save();sheet(tplSheet);break;
  case 'tpl-save':{const t=getTask(id);S.templates.push({id:uid(),name:t.title,title:t.title,desc:t.desc,prio:t.prio,area:t.area,tags:t.tags.slice(),sub:t.sub.map(x=>x.t),repeat:t.repeat,remind:t.remind,time:t.time});save();toast('Als Vorlage gespeichert');break}
  case 'note-tpl':sheet(noteTplSheet);break;
- case 'ntpl-use':{const tp=NOTE_TPL[+el.dataset.i],n=newNote(tplFill(tp.title),tplFill(tp.body));closeModal();ui.view='notes';ui.sel={type:'note',id:n.id};paint();break}
+ case 'ntpl-use':{const tp=NOTE_TPL[+el.dataset.i],n=newNote(tplFill(tp.title),tplFill(tp.body));if(tp.name==='Checkliste')ui.nmode='view';closeModal();ui.view='notes';ui.sel={type:'note',id:n.id};paint();break}
  case 'new-subnote':{const p=getNote(id),n=newNote('','',p.area);n.parent=id;ui.collapsed[id]=false;save();ui.view='notes';ui.sel={type:'note',id:n.id};paint();setTimeout(()=>{const i=$('#ntitle');i&&i.focus()},40);break}
  case 'note-arch-view':ui.narch=!ui.narch;ui.nq='';ui.sel=null;paint();break;
  case 'note-tg':ui.collapsed[id]=!ui.collapsed[id];paintListOnly();break;
@@ -894,6 +914,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target;
 
 let _upd;
 document.addEventListener('input',e=>{const el=e.target;
+ if(el.classList&&el.classList.contains('tx')){const n=ui.sel&&getNote(ui.sel.id);if(!n)return;const L=n.body.split('\n'),i=+el.dataset.line;L[i]=L[i].replace(/^(\s*[-*]\s+\[(?: |x|X)\]\s+).*/,(m,p)=>p+el.textContent.replace(/\n/g,' '));n.body=L.join('\n');n.updated=Date.now();save();return}
  if(el.id==='qai'){$('#qp').innerHTML=qaPreview(el.value);return}
  if(el.dataset.sh){const [i,f]=el.dataset.sh.split(':');S.shifts.types[+i][f]=el.value;save();renderCol();return}
  if(el.dataset.setb){S.set[el.dataset.setb]=el.checked;save();return}
@@ -912,13 +933,13 @@ document.addEventListener('input',e=>{const el=e.target;
  if(nf&&ui.sel&&ui.sel.type==='note'){const n=getNote(ui.sel.id);if(!n)return;
   if(nf==='tags')n.tags=el.value.split(',').map(x=>x.trim().toLowerCase().replace(/^#/,'')).filter(Boolean);else if(nf==='area')n.area=el.value||null;else if(nf==='parent')n.parent=el.value||null;else n[nf]=el.value;
   n.updated=Date.now();save();
-  if(nf==='body'){const pv=$('#npv');if(pv)pv.innerHTML=md(n.body);
+  if(nf==='body'){const pv=$('#npv');if(pv)pv.innerHTML=md(n.body,ui.nmode==='view');
    const ta=el,p=ta.selectionStart,v=ta.value,a=v.lastIndexOf('\n',p-1)+1,m=v.slice(a,p).match(/^\/(\S*)$/);
    if(m){const q=m[1].toLowerCase(),items=SLASH.filter(it=>it[0].toLowerCase().includes(q));ui.slash=items.length?{items,idx:0}:null}else ui.slash=null;renderSlash()}
   paintListOnly();if(nf==='parent')renderDetail();clearTimeout(_upd);_upd=setTimeout(()=>emit('note.updated',n),3000)}});
 document.addEventListener('change',e=>{const el=e.target;
  if(el.id==='imgIn'&&el.files[0]){addImage(el.files[0]);el.value='';return}
- if(el.dataset.line!==undefined&&ui.sel&&ui.sel.type==='note'){const n=getNote(ui.sel.id),L=n.body.split('\n'),i=+el.dataset.line;L[i]=L[i].replace(/\[( |x|X)\]/,el.checked?'[x]':'[ ]');n.body=L.join('\n');n.updated=Date.now();save();const ta=$('#nbody');if(ta)ta.value=n.body;const pv=$('#npv');if(pv)pv.innerHTML=md(n.body)}
+ if(el.dataset.line!==undefined&&ui.sel&&ui.sel.type==='note'){const n=getNote(ui.sel.id),L=n.body.split('\n'),i=+el.dataset.line;L[i]=L[i].replace(/\[( |x|X)\]/,el.checked?'[x]':'[ ]');n.body=L.join('\n');n.updated=Date.now();save();const ta=$('#nbody');if(ta)ta.value=n.body;const pv=$('#npv');if(pv)pv.innerHTML=md(n.body,ui.nmode==='view')}
  if(el.id==='icsFile'&&el.files[0]){const file=el.files[0];file.text().then(txt=>{const f={id:uid(),name:file.name.replace(/\.ics$/i,''),url:'',color:['#f43f5e','#8b5cf6','#14b8a6','#f59e0b','#3b82f6'][S.set.feeds.length%5]};const evs=parseICS(txt,f.id,f.color);S.set.feeds.push(f);S.events.push(...evs);save();toast(evs.length+' Termine importiert');refreshModal();paintList()})}
  if(el.id==='jsonFile'&&el.files[0]){el.files[0].text().then(txt=>{try{const d=JSON.parse(txt);if(!d.tasks||!d.notes)throw new Error('Kein Flux-Backup');if(!confirm('Aktuelle Daten durch Backup ersetzen?'))return;const D=defaults();S=Object.assign(D,d,{set:{...D.set,...(d.set||{})}});fixS();save();applyTheme();closeModal();ui.sel=null;paint();toast('Backup geladen')}catch(err){toast('Fehler: '+err.message)}})}});
 document.addEventListener('paste',e=>{if(e.target.id==='nbody'){const f=[...((e.clipboardData&&e.clipboardData.files)||[])].find(x=>x.type.startsWith('image/'));if(f){e.preventDefault();addImage(f)}}});
