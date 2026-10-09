@@ -1204,7 +1204,7 @@ function dashHTML(){shopFix();const t=today(),open=S.tasks.filter(x=>!x.done),to
   <section class="dp"><h5>Anstehend</h5>${evs.length?evs.slice(0,6).map(x=>`<div class="dr"${evAttr(x.e)}><span class="dt">${x.e.allDay?'GANZ':esc(x.e.time)}<small>${esc(dlabel(x.d))}</small></span><i style="--c:${x.e.color||'#ffb400'}"></i><div><b>${esc(x.e.title)}</b>${x.e.loc?`<small>${esc(x.e.loc)}</small>`:''}</div></div>`).join(''):'<p class="dempty">Keine Termine in den nächsten 7 Tagen.</p>'}<button class="dlink" data-act="ev-new" data-v="${t}">+ Termin</button></section>
   </div>
   <section class="dp w6"><h5>Einkauf</h5>${shops.length?`<div class="dshops">${shops.map(x=>`<button data-act="dash-shop" data-id="${x.l.id}"><span style="--c:${x.l.color}">${esc(x.l.name.slice(0,2))}</span><b>${esc(x.l.name)}</b><em>${x.n}</em></button>`).join('')}</div>`:'<p class="dempty">Alle Einkaufslisten sind leer.</p>'}</section>
-  <section class="dp w6"><h5>Termin-Notizen</h5><p class="dempty">Mitschreiben, aufräumen, als PDF teilen.</p><a class="dlink" href="notes/" style="display:block;text-decoration:none">ÖFFNEN →</a></section>
+  <section class="dp w6"><h5>Flux Faden</h5><p class="dempty">Kundenfälle mit Verlauf, Wiedervorlage und PDF.</p><a class="dlink" href="faden/" style="display:block;text-decoration:none">ÖFFNEN →</a></section>
  </div></div></div>`}
 let wakeLock=null;
 async function setKiosk(on){ui.kiosk=on;document.body.classList.toggle('kiosk',on);

@@ -1,18 +1,19 @@
 // Cloudflare Pages Function: räumt Termin-Notizen mit Claude auf.
 // Benötigt in Cloudflare (Pages → Einstellungen → Variablen): ANTHROPIC_API_KEY und FLUX_KEY (eigener Zugangsschlüssel).
 // Optional: AI_MODEL (Standard: claude-sonnet-5-5).
-const SYSTEM = `Du bist Assistent für Termin-Protokolle auf Deutsch. Du bekommst Rohnotizen (kurze Stichpunkte, oft unordentlich) und manchmal Bilder handschriftlicher Notizen.
-Mach daraus ein klares, leicht verständliches Protokoll für Kollegen im Team.
+const SYSTEM = `Du bist Assistent für Kundenvorgänge auf Deutsch. Du bekommst den Verlauf eines Falls (mehrere Kontakte wie Anrufe oder Meetings, alt nach neu, kurze und oft unordentliche Stichpunkte) und manchmal Bilder handschriftlicher Notizen.
+Fasse den GESAMTEN Verlauf zu einem klaren Stand der Dinge zusammen, leicht verständlich für Kollegen im Team (Teams-Chat).
 Regeln:
 - Erfinde nichts. Nimm nur auf, was in den Notizen steht.
 - Platzhalter wie ⟦K1⟧, ⟦MAIL1⟧, ⟦TEL1⟧ stehen für ausgeblendete Daten. Übernimm sie unverändert.
 - Kurze, einfache Sätze. Keine Floskeln.
-- "summary": 2 bis 4 Sätze, worum es ging und was herauskam.
+- "summary": 2 bis 5 Sätze Stand der Dinge: worum es geht, was bisher passiert ist, wo es gerade steht. Neuere Kontakte zählen mehr als ältere.
+- "next": der eine nächste Schritt (wer tut was bis wann), leer wenn unklar.
 - "decisions": getroffene Beschlüsse, je ein kurzer Satz.
-- "todos": konkrete Aufgaben mit "text" (Verb am Anfang), "owner" (Name, wenn genannt, sonst leer) und "due" (Frist wie in den Notizen, sonst leer).
+- "todos": noch relevante konkrete Aufgaben mit "text" (Verb am Anfang), "owner" (Name, wenn genannt, sonst leer) und "due" (Frist wie in den Notizen, sonst leer). Keine Doppelten.
 - "questions": offene Fragen oder ungeklärte Punkte.
 Antworte NUR mit einem JSON-Objekt dieser Form, ohne weiteren Text:
-{"summary":"","decisions":[],"todos":[{"text":"","owner":"","due":""}],"questions":[]}`;
+{"summary":"","next":"","decisions":[],"todos":[{"text":"","owner":"","due":""}],"questions":[]}`;
 
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
 
