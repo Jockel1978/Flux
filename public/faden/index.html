@@ -226,9 +226,9 @@ function standHTML(m){const ed=!!m.r,r=resultOf(m),ro=ed?'':'readonly';
   return `<div class="res">${ed?'':`<div class="banner">Vorschau direkt aus deinem Verlauf. Mit <b>✨ Stand</b> fasst die KI den ganzen Faden zusammen: Stand der Dinge, nächster Schritt, Aufgaben. Oder übernimm es und bearbeite es selbst.<div class="btns" style="margin-top:10px;justify-content:flex-start"><button class="btn am" data-a="ai">✨ Stand mit KI</button><button class="btn" data-a="adopt">Übernehmen &amp; bearbeiten</button></div></div>`}
   <h3>Stand der Dinge</h3><textarea class="inp" data-f="sum" ${ro} placeholder="Wo stehen wir?">${esc(r.summary)}</textarea>
   ${ed||r.next?`<h3>Nächster Schritt</h3><input class="inp nx" data-f="next" ${ro} placeholder="Was passiert als Nächstes?" value="${esc(r.next||'')}">`:''}
-  <h3>Beschlüsse</h3>${lines(r.decisions,'dec')||'<div class="hint">Keine.</div>'}${ed?`<button class="add" data-a="radd" data-f="dec">＋ Beschluss</button>`:''}
-  <h3>Aufgaben</h3>${todos||'<div class="hint">Keine.</div>'}${ed?`<button class="add" data-a="tadd">＋ Aufgabe</button>`:''}
   <h3>Offene Fragen</h3>${lines(r.questions,'que')||'<div class="hint">Keine.</div>'}${ed?`<button class="add" data-a="radd" data-f="que">＋ Frage</button>`:''}
+  <h3>Aufgaben</h3>${todos||'<div class="hint">Keine.</div>'}${ed?`<button class="add" data-a="tadd">＋ Aufgabe</button>`:''}
+  <h3>Beschlüsse</h3>${lines(r.decisions,'dec')||'<div class="hint">Keine.</div>'}${ed?`<button class="add" data-a="radd" data-f="dec">＋ Beschluss</button>`:''}
   ${ed?`<div class="btns" style="margin-top:18px"><button class="btn" data-a="ai">✨ Neu zusammenfassen</button><button class="btn" data-a="rreset">Zurück zum Verlauf</button></div>`:''}</div>`}
 
 /* ---------- Stift ---------- */
@@ -394,9 +394,9 @@ function teamsText(m){const r=resultOf(m),o=[];o.push(`🧵 ${titleOf(m)}${m.cus
   o.push(`Status: ${ST[m.status]}${m.due?' · Wiedervorlage '+fmtD(m.due):''}${m.person?' · Ansprechpartner: '+m.person:''}`);
   if(r.summary.trim())o.push('',r.summary.trim());
   if((r.next||'').trim())o.push('','➡ Nächster Schritt: '+r.next.trim());
-  const dec=r.decisions.filter(x=>x.trim());if(dec.length)o.push('','✅ Beschlüsse',...dec.map(x=>'• '+x.trim()));
-  const td=r.todos.filter(t=>(t.text||'').trim());if(td.length)o.push('','☑ Aufgaben',...td.map(t=>`${t.done?'☑':'☐'} ${t.text.trim()}${t.owner?' — '+t.owner:''}${t.due?' (bis '+fmtDue(t.due)+')':''}`));
   const qu=r.questions.filter(x=>x.trim());if(qu.length)o.push('','❓ Offen',...qu.map(x=>'• '+x.trim()));
+  const td=r.todos.filter(t=>(t.text||'').trim());if(td.length)o.push('','☑ Aufgaben',...td.map(t=>`${t.done?'☑':'☐'} ${t.text.trim()}${t.owner?' — '+t.owner:''}${t.due?' (bis '+fmtDue(t.due)+')':''}`));
+  const dec=r.decisions.filter(x=>x.trim());if(dec.length)o.push('','✅ Beschlüsse',...dec.map(x=>'• '+x.trim()));
   return o.join('\n')}
 function printPDF(m,withInk){const r=resultOf(m),e=esc,P=s=>e(s).replace(/\n/g,'<br>');
   const li=a=>a.filter(x=>x.trim()).map(x=>`<li>${e(x.trim())}</li>`).join('');
@@ -420,9 +420,9 @@ function printPDF(m,withInk){const r=resultOf(m),e=esc,P=s=>e(s).replace(/\n/g,'
   <div class="meta"><span class="stp">${e(ST[m.status])}</span>${m.due?`Wiedervorlage ${fmtD(m.due)} · `:''}${m.person?`Ansprechpartner: ${e(m.person)} · `:''}${m.ticket?`Ticket #${e(m.ticket)} · `:''}Stand ${fmtD(todayS())}</div>
   ${r.summary.trim()?`<h2>Stand der Dinge</h2><p>${P(r.summary.trim())}</p>`:''}
   ${(r.next||'').trim()?`<h2>Nächster Schritt</h2><p class="nx">${e(r.next.trim())}</p>`:''}
-  ${li(r.decisions)?`<h2>Beschlüsse</h2><ul>${li(r.decisions)}</ul>`:''}
-  ${td.length?`<h2>Aufgaben</h2><table>${td.map(t=>`<tr><td class="b"><span class="bx ${t.done?'on':''}"></span></td><td class="${t.done?'done':''}">${e(t.text.trim())}</td><td class="w">${e(t.owner||'')}</td><td class="d">${e(fmtDue(t.due||''))}</td></tr>`).join('')}</table>`:''}
   ${li(r.questions)?`<h2>Offene Fragen</h2><ul>${li(r.questions)}</ul>`:''}
+  ${td.length?`<h2>Aufgaben</h2><table>${td.map(t=>`<tr><td class="b"><span class="bx ${t.done?'on':''}"></span></td><td class="${t.done?'done':''}">${e(t.text.trim())}</td><td class="w">${e(t.owner||'')}</td><td class="d">${e(fmtDue(t.due||''))}</td></tr>`).join('')}</table>`:''}
+  ${li(r.decisions)?`<h2>Beschlüsse</h2><ul>${li(r.decisions)}</ul>`:''}
   ${verlauf?`<h2>Verlauf</h2>${verlauf}`:''}
   <div class="ft"><span>Erstellt mit Flux Faden</span><span>${fmtD(todayS())}</span></div></body></html>`;
   const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
