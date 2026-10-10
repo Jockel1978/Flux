@@ -8,7 +8,6 @@ Besitzer: Jörg, informelles Deutsch, direkt und knapp, iterativ bauen, nicht sp
 - `public/fb.js` – gebündeltes Firebase (Auth + Firestore) als `window.FBX`. Quelle: `fb-src/entry.js`, neu bauen mit esbuild.
 - `functions/api/ai.js` – Cloudflare Pages Function, ruft die Claude API (Messages). Geschützt durch Header `X-Flux-Key` und Same-Origin-Prüfung.
 - `functions/api/ics.js` – Kalender-Proxy. `functions/_middleware.js` – leitet `/` auf `/faden/` um, wenn der Host mit `flux-faden` oder `flux-notizen` beginnt.
-- `public/panel.html`, `ha-panel/` – Home-Assistant-Wandpanel (Tablet).
 
 ## Deploy
 - Cloudflare Pages, Output-Verzeichnis `public`, kein Build-Befehl. Push auf `main` deployt automatisch.
@@ -28,6 +27,5 @@ Playwright (headless Chromium) gegen `python3 -m http.server -d public`, `fb.js`
 
 ## Offen / ungeprüft
 - Wetter in Flux nach Absicherung: Rückmeldung steht aus.
-- HA-Panel: echte Verbindung (http/https, gemischte Inhalte) ungeprüft.
 - Echte KI mit Schlüsseln, Firebase-Sync von `threads`, Installation von Faden als App: ungeprüft.
 - Ideen: Teams-Webhook, Push-Erinnerungen für Wiedervorlagen (Firebase Cloud Functions + FCM), Bilder auslagern.
