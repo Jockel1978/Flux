@@ -418,7 +418,7 @@ function printPDF(m,withInk){const r=resultOf(m),e=esc,P=s=>e(s).replace(/\n/g,'
   const li=a=>a.filter(x=>x.trim()).map(x=>`<li>${e(x.trim())}</li>`).join('');
   const td=r.todos.filter(t=>(t.text||'').trim());
   const ents=m.e.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')||a.created-b.created);
-  const verlauf=ents.map(en=>{const L=en.b.filter(b=>b.k!=='ink'&&b.k!=='img'&&(b.txt||'').trim());const im=withInk?en.b.filter(b=>(b.k==='ink'&&b.s&&b.s.length)||b.k==='img').map(b=>`<img class="ink" src="${b.k==='img'?b.src:inkPNG(b,1400,'image/png')}">`).join(''):'';
+  const verlauf=ents.map(en=>{const L=en.b.filter(b=>b.k!=='ink'&&b.k!=='img'&&(b.txt||'').trim());const im=withInk?en.b.filter(b=>(b.k==='ink'&&b.s&&b.s.length)).map(b=>`<img class="ink" src="${inkPNG(b,1400,'image/png')}">`).join('')+(en.b.some(b=>b.k==='img')?`<div class="shots">${en.b.filter(b=>b.k==='img').map(b=>`<img class="shot" src="${b.src}">`).join('')}</div>`:''):'';
     if(!L.length&&!im)return '';const lab={t:'Aufgabe: ',d:'Beschluss: ',q:'Frage: '};
     return `<div class="en"><div class="eh">${EK[en.kind].lb} · ${fmtD(en.date)}</div>${L.length?`<ul>${L.map(b=>`<li>${b.k!=='n'?`<b>${lab[b.k]}</b>`:''}${e(b.txt.trim())}</li>`).join('')}</ul>`:''}${im}</div>`}).join('');
   const html=`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${e(titleOf(m))}</title><style>
@@ -429,8 +429,8 @@ function printPDF(m,withInk){const r=resultOf(m),e=esc,P=s=>e(s).replace(/\n/g,'
   h2{font:700 9pt ui-monospace,Menlo,monospace;letter-spacing:.18em;text-transform:uppercase;color:#9a6a00;margin:18px 0 6px;border-bottom:1px solid #e6e8ec;padding-bottom:3px}
   p{margin:0 0 6px}ul{margin:0;padding-left:18px}li{margin-bottom:3px}table{width:100%;border-collapse:collapse}td{padding:6px 6px;border-bottom:1px solid #eceef2;vertical-align:top}td.b{width:22px}.bx{display:inline-block;width:13px;height:13px;border:1.6px solid #1c1f24;border-radius:3px;position:relative}.bx.on::after{content:'✓';position:absolute;left:1px;top:-4px;font-size:12pt;color:#9a6a00;font-weight:700}
   td.w{width:26%;color:#5c6470;font-size:10pt}td.d{width:18%;color:#5c6470;font-size:10pt}.done{text-decoration:line-through;color:#8a8f98}
-  .nx{border-left:4px solid #ffb400;background:#fff8e6;padding:6px 10px;border-radius:4px}.en{margin-bottom:10px;page-break-inside:avoid}.eh{font-weight:700;font-size:10.5pt;color:#3a4048;margin-bottom:2px}
-  .ink{width:100%;border:1px solid #e0e3e8;border-radius:6px;margin:6px 0;page-break-inside:avoid}.ft{position:fixed;bottom:0;left:0;right:0;font-size:8pt;color:#8a8f98;display:flex;justify-content:space-between}
+  .nx{border-left:4px solid #ffb400;background:#fff8e6;padding:6px 10px;border-radius:4px}.en{margin-bottom:10px}h2{break-after:avoid}li{break-inside:avoid}.eh{font-weight:700;font-size:10.5pt;color:#3a4048;margin-bottom:2px}
+  .ink{max-width:100%;max-height:150mm;width:auto;height:auto;display:block;border:1px solid #e0e3e8;border-radius:6px;margin:6px 0;break-inside:avoid}.shots{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.shot{max-width:calc(50% - 4px);max-height:90mm;width:auto;height:auto;border:1px solid #e0e3e8;border-radius:6px;break-inside:avoid}.ft{position:fixed;bottom:0;left:0;right:0;font-size:8pt;color:#8a8f98;display:flex;justify-content:space-between}
   </style></head><body><div class="top"><div class="lg">F</div><div class="br">FLUX FADEN</div></div>
   <h1>${e(titleOf(m))}</h1>${m.cust&&m.topic?`<div class="sub">${e(m.topic)}</div>`:''}
   <div class="meta"><span class="stp">${e(ST[m.status])}</span>${m.due?`Wiedervorlage ${fmtD(m.due)} · `:''}${m.person?`Ansprechpartner: ${e(m.person)} · `:''}${m.ticket?`Ticket #${e(m.ticket)} · `:''}Stand ${fmtD(todayS())}</div>
