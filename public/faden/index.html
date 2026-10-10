@@ -82,6 +82,7 @@ input.title{font-size:24px;font-weight:700;background:none;border:0;border-botto
 .imgb{position:relative;margin:10px 0;border:1px solid var(--ln);border-radius:14px;overflow:hidden;background:#000}
 .imgb img{display:block;width:100%;max-height:420px;object-fit:contain;cursor:zoom-in;background:#000}
 .imgb .xb{position:absolute;top:6px;right:6px;width:42px;background:rgba(15,17,20,.8);border:1px solid var(--ln);color:var(--tx)}
+.shotg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.shotg figure{margin:0}.shotg img{width:100%;height:150px;object-fit:cover;border:1px solid var(--ln);border-radius:10px;cursor:zoom-in;background:#000}.shotg figcaption{font-size:12px;color:var(--mt);margin-top:3px}
 .zoom{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:50;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:10px}
 .zoom img{max-width:none;width:min(1400px,100%);height:auto}
 canvas{display:block;width:100%;touch-action:none;cursor:crosshair}
@@ -225,6 +226,8 @@ function lnHTML(b){const k=b.k;return `<div class="ln k-${k} ${b.done?'done':''}
 function autoGrow(t){t.style.height='auto';t.style.height=Math.max(42,t.scrollHeight)+'px'}
 const autoGrowAll=()=>$$('.ln textarea').forEach(autoGrow);
 
+function shotsHTML(m){const L=m.e.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).flatMap(e=>e.b.filter(b=>b.k==='img').map(b=>({b,e})));if(!L.length)return'';
+  return `<h3>Screenshots (${L.length})</h3><div class="shotg">${L.map(x=>`<figure><img src="${x.b.src}" data-a="zoomimg" alt="Screenshot"><figcaption>${fmtS(x.e.date)} ${EK[x.e.kind].lb}</figcaption></figure>`).join('')}</div>`}
 /* Stand */
 function standHTML(m){const ed=!!m.r,r=resultOf(m),ro=ed?'':'readonly';
   const lines=(arr,f)=>arr.map((t,i)=>`<div class="rl"><input class="inp" data-f="${f}" data-i="${i}" value="${esc(t)}" ${ro}>${ed?`<button class="xb" data-a="rdel" data-f="${f}" data-i="${i}">×</button>`:''}</div>`).join('');
@@ -235,6 +238,7 @@ function standHTML(m){const ed=!!m.r,r=resultOf(m),ro=ed?'':'readonly';
   <h3>Offene Fragen</h3>${lines(r.questions,'que')||'<div class="hint">Keine.</div>'}${ed?`<button class="add" data-a="radd" data-f="que">＋ Frage</button>`:''}
   <h3>Aufgaben</h3>${todos||'<div class="hint">Keine.</div>'}${ed?`<button class="add" data-a="tadd">＋ Aufgabe</button>`:''}
   <h3>Beschlüsse</h3>${lines(r.decisions,'dec')||'<div class="hint">Keine.</div>'}${ed?`<button class="add" data-a="radd" data-f="dec">＋ Beschluss</button>`:''}
+  ${shotsHTML(m)}
   ${ed?`<div class="btns" style="margin-top:18px"><button class="btn" data-a="ai">✨ Neu zusammenfassen</button><button class="btn" data-a="rreset">Zurück zum Verlauf</button></div>`:''}</div>`}
 
 /* ---------- Bilder / Screenshots ---------- */
