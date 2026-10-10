@@ -1,7 +1,7 @@
 // Cloudflare Pages Function: räumt Termin-Notizen mit Claude auf.
 // Benötigt in Cloudflare (Pages → Einstellungen → Variablen): ANTHROPIC_API_KEY und FLUX_KEY (eigener Zugangsschlüssel).
 // Optional: AI_MODEL (Standard: claude-sonnet-5-5).
-const SYSTEM = `Du bist Assistent für Kundenvorgänge auf Deutsch. Du bekommst den Verlauf eines Falls (mehrere Kontakte wie Anrufe oder Meetings, alt nach neu, kurze und oft unordentliche Stichpunkte) und manchmal Bilder handschriftlicher Notizen.
+const SYSTEM = `Du bist Assistent für Kundenvorgänge auf Deutsch. Du bekommst den Verlauf eines Falls (mehrere Kontakte wie Anrufe oder Meetings, alt nach neu, kurze und oft unordentliche Stichpunkte) und manchmal Bilder: handschriftliche Notizen oder Screenshots vom Kunden (Fehlermeldungen, Einstellungen, Chats). Lies Screenshots mit und nutze relevante Infos daraus (zum Beispiel Fehlertext), erfinde nichts.
 Fasse den GESAMTEN Verlauf zu einem klaren Stand der Dinge zusammen, leicht verständlich für Kollegen im Team (Teams-Chat).
 Regeln:
 - Erfinde nichts. Nimm nur auf, was in den Notizen steht.
@@ -28,7 +28,7 @@ export async function onRequestPost({ request, env }) {
   try { body = JSON.parse(raw); } catch { return json({ error: 'bad json' }, 400); }
   const text = String(body.text || '').slice(0, 30000);
   const content = [];
-  (Array.isArray(body.images) ? body.images : []).slice(0, 4).forEach(d => {
+  (Array.isArray(body.images) ? body.images : []).slice(0, 8).forEach(d => {
     const m = /^data:(image\/(?:png|jpeg));base64,([A-Za-z0-9+/=]+)$/.exec(String(d));
     if (m) content.push({ type: 'image', source: { type: 'base64', media_type: m[1], data: m[2] } });
   });

@@ -79,6 +79,11 @@ input.title{font-size:24px;font-weight:700;background:none;border:0;border-botto
 .tl.on{border-color:var(--am)}
 .dot{width:20px;height:20px;border-radius:50%;display:block}
 .inkw{background:#fff;position:relative}
+.imgb{position:relative;margin:10px 0;border:1px solid var(--ln);border-radius:14px;overflow:hidden;background:#000}
+.imgb img{display:block;width:100%;max-height:420px;object-fit:contain;cursor:zoom-in;background:#000}
+.imgb .xb{position:absolute;top:6px;right:6px;width:42px;background:rgba(15,17,20,.8);border:1px solid var(--ln);color:var(--tx)}
+.zoom{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:50;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:10px}
+.zoom img{max-width:none;width:min(1400px,100%);height:auto}
 canvas{display:block;width:100%;touch-action:none;cursor:crosshair}
 .res h3{font:700 12px ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--am);margin:22px 0 8px}
 .res textarea.inp{min-height:90px;resize:vertical;font-size:16px}
@@ -212,9 +217,10 @@ function threadV(){const m=getM(ui.id);if(!m){ui.view='home';render();return}
   <div class="wv"><label class="fld">Wiedervorlage<input type="date" id="mdu" value="${esc(m.due)}"></label><button class="mini" data-a="due" data-d="1">Morgen</button><button class="mini" data-a="due" data-d="3">+3 Tage</button><button class="mini" data-a="due" data-d="7">+1 Woche</button>${m.due?`<button class="mini" data-a="due" data-d="0">✕</button>`:''}</div>
   <div class="seg"><button data-a="tab" data-v="v" class="${ui.tab==='v'?'on':''}">Verlauf (${m.e.length})</button><button data-a="tab" data-v="s" class="${ui.tab==='s'?'on':''}">Stand${openCount(m)?` · ${openCount(m)} offen`:''}</button></div>
   <div id="body">${ui.tab==='v'?verlaufHTML(m):standHTML(m)}</div></div></div>
-  ${ui.tab==='v'&&!ro?`<div class="dock"><div class="in"><button class="chip nw" data-a="newent">＋ Neuer Kontakt</button>${KORDER.map(k=>`<button class="chip" data-a="addln" data-k="${k}">${KIND[k].ic} ${KIND[k].lb}</button>`).join('')}<button class="chip" data-a="addink">✎ Stift</button><button class="chip ai" data-a="ai">✨ Stand</button></div></div>`:''}`;
+  ${ui.tab==='v'&&!ro?`<div class="dock"><div class="in"><button class="chip nw" data-a="newent">＋ Neuer Kontakt</button>${KORDER.map(k=>`<button class="chip" data-a="addln" data-k="${k}">${KIND[k].ic} ${KIND[k].lb}</button>`).join('')}<button class="chip" data-a="addink">✎ Stift</button><button class="chip" data-a="addimg">🖼 Bild</button><button class="chip ai" data-a="ai">✨ Stand</button></div></div>`:''}`;
   if(ui.tab==='v'){autoGrowAll();initInks(m)}}
-function verlaufHTML(m){const a=activeEnt(m);return m.e.map(e=>`<div class="ent ${e.id===a.id&&m.e.length>1?'act':''}" data-eid="${e.id}"><div class="enthd"><button class="kb" data-a="ekind" title="Art ändern">${EK[e.kind].ic}</button><span class="kl">${EK[e.kind].lb}</span><input type="date" data-f="edate" value="${esc(e.date)}"><span class="grow"></span>${m.e.length>1?`<button class="xb" data-a="edel" aria-label="Kontakt löschen">🗑</button>`:''}</div>${e.b.map(b=>b.k==='ink'?inkHTML(b):lnHTML(b)).join('')}</div>`).join('')}
+function verlaufHTML(m){const a=activeEnt(m);return m.e.map(e=>`<div class="ent ${e.id===a.id&&m.e.length>1?'act':''}" data-eid="${e.id}"><div class="enthd"><button class="kb" data-a="ekind" title="Art ändern">${EK[e.kind].ic}</button><span class="kl">${EK[e.kind].lb}</span><input type="date" data-f="edate" value="${esc(e.date)}"><span class="grow"></span>${m.e.length>1?`<button class="xb" data-a="edel" aria-label="Kontakt löschen">🗑</button>`:''}</div>${e.b.map(b=>b.k==='ink'?inkHTML(b):b.k==='img'?imgHTML(b):lnHTML(b)).join('')}</div>`).join('')}
+function imgHTML(b){return `<div class="imgb" data-id="${b.id}"><img src="${b.src}" alt="Screenshot" data-a="zoomimg"><button class="xb" data-a="delimg" aria-label="Bild löschen">🗑</button></div>`}
 function lnHTML(b){const k=b.k;return `<div class="ln k-${k} ${b.done?'done':''}" data-id="${b.id}"><button class="kic" data-a="kind" title="Art ändern">${KIND[k].ic}</button>${k==='t'?`<input type="checkbox" class="cb" data-a="chk" ${b.done?'checked':''}>`:''}<textarea rows="1" data-f="txt" placeholder="${KIND[k].lb} …" spellcheck="true">${esc(b.txt)}</textarea><button class="xb" data-a="delln" aria-label="Zeile löschen">×</button></div>`}
 function autoGrow(t){t.style.height='auto';t.style.height=Math.max(42,t.scrollHeight)+'px'}
 const autoGrowAll=()=>$$('.ln textarea').forEach(autoGrow);
@@ -230,6 +236,13 @@ function standHTML(m){const ed=!!m.r,r=resultOf(m),ro=ed?'':'readonly';
   <h3>Aufgaben</h3>${todos||'<div class="hint">Keine.</div>'}${ed?`<button class="add" data-a="tadd">＋ Aufgabe</button>`:''}
   <h3>Beschlüsse</h3>${lines(r.decisions,'dec')||'<div class="hint">Keine.</div>'}${ed?`<button class="add" data-a="radd" data-f="dec">＋ Beschluss</button>`:''}
   ${ed?`<div class="btns" style="margin-top:18px"><button class="btn" data-a="ai">✨ Neu zusammenfassen</button><button class="btn" data-a="rreset">Zurück zum Verlauf</button></div>`:''}</div>`}
+
+/* ---------- Bilder / Screenshots ---------- */
+function shrink(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const M=1280,k=Math.min(1,M/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.72))};im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('Bild nicht lesbar'))};im.src=u})}
+async function addImages(m,en,files){files=files.filter(f=>/^image\//.test(f.type));if(!files.length)return;let n=0;
+  for(const f of files){try{const src=await shrink(f);const last=en.b[en.b.length-1];const b={id:uid(),k:'img',src};if(last&&last.k==='n'&&!(last.txt||'').trim())en.b.splice(en.b.length-1,0,b);else en.b.push(b);n++}catch(e){toast('Bild konnte nicht geladen werden')}}
+  if(n){touch(m);if(ui.view==='thread'&&ui.tab==='v')redrawV();toast(n+(n>1?' Bilder':' Bild')+' hinzugefügt')}}
+document.addEventListener('paste',e=>{if(ui.view!=='thread'||ui.tab!=='v')return;const m=getM(ui.id);if(!m||m.arch)return;const fs=[...(e.clipboardData&&e.clipboardData.files||[])].filter(f=>/^image\//.test(f.type));if(!fs.length)return;e.preventDefault();addImages(m,activeEnt(m),fs)});
 
 /* ---------- Stift ---------- */
 const pen={tool:'pen',color:'#111827'};const PENS=[['#111827','Schwarz'],['#1d4ed8','Blau'],['#dc2626','Rot']];
@@ -291,8 +304,11 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!
    case 'newent':{const ne=newEntry(m.e[0]?m.e[0].kind:'call');m.e.unshift(ne);ui.ent=ne.id;touch(m);redrawV();focusLn(ne.b[0].id);break}
    case 'ekind':if(en){en.kind=EORDER[(EORDER.indexOf(en.kind)+1)%4];touch(m);redrawV()}break;
    case 'edel':if(en&&confirm('Diesen Kontakt aus dem Verlauf löschen?')){m.e=m.e.filter(x=>x!==en);if(ui.ent===en.id)ui.ent=m.e[0].id;touch(m);redrawV()}break;
-   case 'addln':{const ae2=activeEnt(m),k=el.dataset.k,last=ae2.b[ae2.b.length-1];let b;if(last&&last.k!=='ink'&&!(last.txt||'').trim()){last.k=k;b=last}else b=addLine(ae2,k);touch(m);redrawV();focusLn(b.id);break}
+   case 'addln':{const ae2=activeEnt(m),k=el.dataset.k,last=ae2.b[ae2.b.length-1];let b;if(last&&last.k!=='ink'&&last.k!=='img'&&!(last.txt||'').trim()){last.k=k;b=last}else b=addLine(ae2,k);touch(m);redrawV();focusLn(b.id);break}
    case 'addink':{const ae2=activeEnt(m),b={id:uid(),k:'ink',h:700,s:[]};ae2.b.push(b);touch(m);redrawV();const x=$(`.inkb[data-id="${b.id}"]`);x&&x.scrollIntoView({block:'center',behavior:'smooth'});if(!window.__penHint){window.__penHint=1;toast('Mit dem Stift schreiben, mit dem Finger scrollen')}break}
+   case 'addimg':{const fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.multiple=true;fi.onchange=()=>addImages(m,activeEnt(m),[...fi.files]);fi.click();break}
+   case 'delimg':{const id=el.closest('.imgb').dataset.id,en2=m.e.find(x=>x.b.some(b=>b.id===id));if(en2&&confirm('Bild löschen?')){en2.b=en2.b.filter(b=>b.id!==id);if(!en2.b.length)en2.b.push({id:uid(),k:'n',txt:''});touch(m);redrawV()}break}
+   case 'zoomimg':{const z=document.createElement('div');z.className='zoom';z.innerHTML=`<img src="${el.src}">`;z.onclick=()=>z.remove();document.body.appendChild(z);break}
    case 'kind':if(lb){lb.k=KORDER[(KORDER.indexOf(lb.k)+1)%4];touch(m);redrawV();focusLn(lb.id,false)}break;
    case 'chk':if(lb){lb.done=el.checked;touch(m);ln.classList.toggle('done',lb.done)}break;
    case 'delln':if(lb){en.b=en.b.filter(b=>b!==lb);if(!en.b.length)en.b.push({id:uid(),k:'n',txt:''});touch(m);redrawV()}break;
@@ -329,7 +345,7 @@ document.addEventListener('beforeinput',e=>{const el=e.target;if(!el.matches||!e
   if(e.inputType==='insertParagraph'||e.inputType==='insertLineBreak'){e.preventDefault();
     if(!el.value.trim()&&b.k!=='n'){b.k='n';touch(m);redrawV();focusLn(b.id);return}
     const off=el.selectionStart,left=el.value.slice(0,off),right=el.value.slice(off);b.txt=left.trimEnd();const nb=addLine(en,b.k,b.id,right.trimStart());touch(m);redrawV();focusLn(nb.id,false);const t=$(`.ln[data-id="${nb.id}"] textarea`);if(t)t.selectionStart=t.selectionEnd=0}
-  else if(e.inputType==='deleteContentBackward'&&!el.value&&en.b.length>1){e.preventDefault();const i=en.b.indexOf(b);en.b.splice(i,1);touch(m);redrawV();const p=en.b[Math.max(0,i-1)];if(p&&p.k!=='ink')focusLn(p.id)}});
+  else if(e.inputType==='deleteContentBackward'&&!el.value&&en.b.length>1){e.preventDefault();const i=en.b.indexOf(b);en.b.splice(i,1);touch(m);redrawV();const p=en.b[Math.max(0,i-1)];if(p&&p.k!=='ink'&&p.k!=='img')focusLn(p.id)}});
 
 /* ---------- Dialoge ---------- */
 function ov(html){closeOv();const d=document.createElement('div');d.className='ov';d.dataset.a='close-ov';d.innerHTML=`<div class="box">${html}</div>`;$('#ovh').appendChild(d);return d}
@@ -361,20 +377,20 @@ const restore=(s,map)=>{if(typeof s!=='string')return s;for(const k in map)s=s.s
 /* ---------- KI ---------- */
 function rawText(m){const lab={n:'-',t:'[Aufgabe]',d:'[Beschluss]',q:'[Frage]'};
   const ents=m.e.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')||a.created-b.created);
-  return `Kunde: ${m.cust||'(unbekannt)'}\nAnsprechpartner: ${m.person||'(unbekannt)'}\nThema: ${m.topic||'(ohne)'}\nTicket: ${m.ticket||'-'}\nStatus: ${ST[m.status]}\nHeute: ${fmtD(todayS())}\n\nVerlauf (alt nach neu):\n`+ents.map(e=>`\n[${fmtD(e.date)} · ${EK[e.kind].lb}]\n`+(e.b.filter(b=>b.k!=='ink'&&(b.txt||'').trim()).map(b=>`${lab[b.k]} ${b.txt.trim()}`).join('\n')||'(nur Handschrift)')).join('\n')}
-function inkImages(m){const out=[];allB(m).filter(b=>b.k==='ink'&&b.s&&b.s.length).slice(0,4).forEach(b=>out.push(inkPNG(b,1000,'image/jpeg')));return out}
+  return `Kunde: ${m.cust||'(unbekannt)'}\nAnsprechpartner: ${m.person||'(unbekannt)'}\nThema: ${m.topic||'(ohne)'}\nTicket: ${m.ticket||'-'}\nStatus: ${ST[m.status]}\nHeute: ${fmtD(todayS())}\n\nVerlauf (alt nach neu):\n`+ents.map(e=>`\n[${fmtD(e.date)} · ${EK[e.kind].lb}]\n`+(e.b.filter(b=>b.k!=='ink'&&b.k!=='img'&&(b.txt||'').trim()).map(b=>`${lab[b.k]} ${b.txt.trim()}`).join('\n')||'(nur Handschrift/Screenshots)')+(e.b.some(b=>b.k==='img')?`\n(${e.b.filter(b=>b.k==='img').length} Screenshot(s) vom Kunden angehängt)`:'')).join('\n')}
+function inkImages(m){const out=[];allB(m).forEach(b=>{if(out.length>=8)return;if(b.k==='img')out.push(b.src);else if(b.k==='ink'&&b.s&&b.s.length)out.push(inkPNG(b,1000,'image/jpeg'))});return out}
 function inkPNG(b,W,type){const s=W/1000,cv=document.createElement('canvas');cv.width=W;cv.height=Math.round((b.h||700)*s);const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);(b.s||[]).forEach(st=>drawStroke(c,st,s));return cv.toDataURL(type||'image/png',.82)}
-function aiSheet(m){const B=allB(m),hasInk=B.some(b=>b.k==='ink'&&b.s&&b.s.length),hasTxt=B.some(b=>b.k!=='ink'&&(b.txt||'').trim());
+function aiSheet(m){const B=allB(m),hasInk=B.some(b=>(b.k==='ink'&&b.s&&b.s.length)||b.k==='img'),hasTxt=B.some(b=>b.k!=='ink'&&(b.txt||'').trim());
   if(!hasInk&&!hasTxt){toast('Erst etwas mitschreiben');return}
   if(!S.set.key){toast('Erst den KI-Zugangsschlüssel in den Einstellungen eintragen');settingsSheet();return}
   const a=anonymize(rawText(m),m);
   const d=ov(`<h2>✨ Stand der Dinge</h2><div class="hint">Das geht an die KI. Kunde, Ansprechpartner und deine Begriffe erscheinen als Platzhalter (⟦K1⟧ …) und kommen im Ergebnis wieder zurück.</div><pre>${esc(a.text)}</pre>
-   ${hasInk?`<label class="chk"><input type="checkbox" id="a-ink"> Handschrift mitsenden (die KI liest sie mit – <b>Namen darin werden NICHT ausgeblendet</b>)</label>`:''}
+   ${hasInk?`<label class="chk"><input type="checkbox" id="a-ink"> Handschrift &amp; Screenshots mitsenden (die KI liest sie mit – <b>Namen und Daten darin werden NICHT ausgeblendet</b>)</label>`:''}
    <div class="err" id="a-e"></div><div class="btns"><button class="btn" id="a-x">Abbrechen</button><button class="btn am" id="a-go">Senden</button></div>`);
   $('#a-x',d).onclick=closeOv;
   $('#a-go',d).onclick=async()=>{const btn=$('#a-go',d);btn.innerHTML='<span class="spin"></span>';btn.disabled=true;$('#a-e').textContent='';
     try{const imgs=hasInk&&$('#a-ink').checked?inkImages(m):[];
-      if(!hasTxt&&!imgs.length)throw new Error('Nur Handschrift vorhanden – bitte „Handschrift mitsenden“ ankreuzen.');
+      if(!hasTxt&&!imgs.length)throw new Error('Nur Handschrift/Bilder vorhanden – bitte „mitsenden“ ankreuzen.');
       const res=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json','X-Flux-Key':S.set.key},body:JSON.stringify({text:a.text,images:imgs})});
       const j=await res.json().catch(()=>({}));if(!res.ok||!j.r)throw new Error(res.status===401?'Zugangsschlüssel falsch.':'KI-Fehler ('+res.status+')'+(j.error?': '+j.error:''));
       const r=j.r,mp=a.map,arr=x=>(Array.isArray(x)?x:[]).map(s=>restore(String(s),mp));
@@ -384,8 +400,8 @@ function aiSheet(m){const B=allB(m),hasInk=B.some(b=>b.k==='ink'&&b.s&&b.s.lengt
     catch(e){btn.disabled=false;btn.textContent='Nochmal senden';$('#a-e').textContent=String(e.message||e)}}}
 
 /* ---------- Teilen: PDF & Text ---------- */
-function shareSheet(m){const hasInk=allB(m).some(b=>b.k==='ink'&&b.s&&b.s.length);
-  const d=ov(`<h2>Teilen</h2>${hasInk?`<label class="chk"><input type="checkbox" id="h-ink"> Handschrift im PDF anhängen</label>`:''}
+function shareSheet(m){const hasInk=allB(m).some(b=>(b.k==='ink'&&b.s&&b.s.length)||b.k==='img');
+  const d=ov(`<h2>Teilen</h2>${hasInk?`<label class="chk"><input type="checkbox" id="h-ink" checked> Handschrift &amp; Screenshots im PDF anhängen</label>`:''}
    <div class="btns" style="justify-content:stretch"><button class="btn am" id="h-pdf" style="flex:1">📄 Als PDF</button><button class="btn" id="h-txt" style="flex:1">📋 Text kopieren</button></div>
    <div class="hint">PDF (mit Verlauf): im Druckdialog „Als PDF speichern“ wählen, dann in Teams anhängen. Text: kompakt, direkt in den Teams-Chat einfügbar.</div>`);
   $('#h-pdf',d).onclick=()=>{const wi=hasInk&&$('#h-ink').checked;closeOv();printPDF(m,wi)};
@@ -402,7 +418,7 @@ function printPDF(m,withInk){const r=resultOf(m),e=esc,P=s=>e(s).replace(/\n/g,'
   const li=a=>a.filter(x=>x.trim()).map(x=>`<li>${e(x.trim())}</li>`).join('');
   const td=r.todos.filter(t=>(t.text||'').trim());
   const ents=m.e.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')||a.created-b.created);
-  const verlauf=ents.map(en=>{const L=en.b.filter(b=>b.k!=='ink'&&(b.txt||'').trim());const im=withInk?en.b.filter(b=>b.k==='ink'&&b.s&&b.s.length).map(b=>`<img class="ink" src="${inkPNG(b,1400,'image/png')}">`).join(''):'';
+  const verlauf=ents.map(en=>{const L=en.b.filter(b=>b.k!=='ink'&&b.k!=='img'&&(b.txt||'').trim());const im=withInk?en.b.filter(b=>(b.k==='ink'&&b.s&&b.s.length)||b.k==='img').map(b=>`<img class="ink" src="${b.k==='img'?b.src:inkPNG(b,1400,'image/png')}">`).join(''):'';
     if(!L.length&&!im)return '';const lab={t:'Aufgabe: ',d:'Beschluss: ',q:'Frage: '};
     return `<div class="en"><div class="eh">${EK[en.kind].lb} · ${fmtD(en.date)}</div>${L.length?`<ul>${L.map(b=>`<li>${b.k!=='n'?`<b>${lab[b.k]}</b>`:''}${e(b.txt.trim())}</li>`).join('')}</ul>`:''}${im}</div>`}).join('');
   const html=`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${e(titleOf(m))}</title><style>
