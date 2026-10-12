@@ -27,5 +27,5 @@ Playwright (headless Chromium) gegen `python3 -m http.server -d public`, `fb.js`
 
 ## Offen / ungeprüft
 - Wetter in Flux nach Absicherung: Rückmeldung steht aus.
-- Echte KI mit Schlüsseln, Firebase-Sync von `threads`, Installation von Faden als App: ungeprüft.
+- Echte KI mit Schlüsseln, Installation von Faden als App: ungeprüft. Firebase-Sync von Flux und Faden im Browser: von Jörg bestätigt (Login in beiden, synct).
 - Ideen: Teams-Webhook, Push-Erinnerungen für Wiedervorlagen (Firebase Cloud Functions + FCM), Bilder auslagern.
