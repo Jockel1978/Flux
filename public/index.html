@@ -1137,7 +1137,8 @@ async function fetchICS(url){url=url.replace(/^webcal:/i,'https:');
 const EV_COL=['#6366f1','#0ea5e9','#10b981','#f59e0b','#ec4899','#ef4444'];
 const isFileEv=e=>((S.set.feeds.find(f=>f.id===e.src)||{}).url)==='';
 const evSynced=e=>e.src==='local'||isFileEv(e);
-function evNew(d){const n=new Date(),h=Math.min(22,n.getHours()+1);d=d||today();ui.ev={id:null,title:'',date:d,endDate:d,allDay:false,time:pad(h)+':00',endTime:pad(h+1)+':00',loc:'',desc:'',color:EV_COL[0]};sheet(evSheet)}
+const EV_TPL='👤 Kunde: \n📞 Telefon: \n📌 Anliegen: ';
+function evNew(d){const n=new Date(),h=Math.min(22,n.getHours()+1);d=d||today();ui.ev={id:null,title:'',date:d,endDate:d,allDay:false,time:pad(h)+':00',endTime:pad(h+1)+':00',loc:'',desc:EV_TPL,color:EV_COL[0]};sheet(evSheet)}
 function evEdit(id){const e=S.events.find(x=>x.id===id);if(!e||e.src!=='local')return;ui.ev={...e,endDate:e.endDate||e.date};sheet(evSheet)}
 function evRead(){const o=ui.ev;if(!o||!$('#evT'))return;const g=i=>($('#'+i)||{}).value;o.title=g('evT');o.date=g('evD')||o.date;if(o.allDay)o.endDate=g('evD2')||o.date;else{o.time=g('evS')||o.time;o.endTime=g('evE')||''}o.loc=g('evL')||'';o.desc=g('evN')||''}
 function evSheet(){const o=ui.ev;
@@ -1156,7 +1157,7 @@ function evIcs(o){const e=evEnd(o),st=new Date().toISOString().replace(/[-:]/g,'
  return icsWrap([['BEGIN:VEVENT','UID:'+o.id+'@flux','DTSTAMP:'+st,o.allDay?'DTSTART;VALUE=DATE:'+cmp(o.date):'DTSTART:'+cmp(o.date,o.time),o.allDay?'DTEND;VALUE=DATE:'+cmp(e.d):'DTEND:'+cmp(e.d,e.t),'SUMMARY:'+icsEsc(o.title),...(o.loc?['LOCATION:'+icsEsc(o.loc)]:[]),...(o.desc?['DESCRIPTION:'+icsEsc(o.desc)]:[]),'END:VEVENT']])}
 function evSave(){evRead();const o=ui.ev;if(!o)return;if(!o.title.trim()){toast('Bitte einen Titel eintragen');return}
  let ed=o.allDay?(o.endDate&&o.endDate>=o.date?o.endDate:o.date):o.date;
- const e={id:o.id||'e_'+uid(),title:o.title.trim(),loc:o.loc||'',desc:(o.desc||'').trim(),allDay:!!o.allDay,time:o.allDay?'':o.time,endTime:o.allDay?'':(o.endTime||''),date:o.date,endDate:ed,color:o.color,src:'local'};
+ const e={id:o.id||'e_'+uid(),title:o.title.trim(),loc:o.loc||'',desc:(o.desc||'').split('\n').filter(l=>!/^\s*\S{1,4}\s*(Kunde|Telefon|Anliegen):\s*$/.test(l)).join('\n').trim(),allDay:!!o.allDay,time:o.allDay?'':o.time,endTime:o.allDay?'':(o.endTime||''),date:o.date,endDate:ed,color:o.color,src:'local'};
  const i=S.events.findIndex(x=>x.id===e.id);if(i>=0)S.events[i]=e;else S.events.push(e);ui.calSel=e.date;save();closeModal();paint();toast('Termin gespeichert')}
 const evAttr=e=>e.src==='local'?` data-act="ev-edit" data-id="${e.id}" style="cursor:pointer"`:'';
 function evStrip(){const t=today(),l=(calMap(t,t)[t]||{ev:[]}).ev;if(!l.length)return '';
