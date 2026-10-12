@@ -105,6 +105,8 @@ canvas{display:block;width:100%;touch-action:none;cursor:crosshair}
 .btn{height:46px;padding:0 18px;border-radius:12px;background:var(--pn2);border:1px solid var(--ln);font-weight:600}
 .btn.am{background:var(--am);color:#1a1300;border:0;font-weight:700}
 .chk{display:flex;gap:10px;align-items:center;font-size:15px}.chk input{width:22px;height:22px;accent-color:var(--am)}
+.dled{width:9px;height:9px;border-radius:50%;background:#555b64;display:inline-block}.dled.ok{background:#4ade80;box-shadow:0 0 8px #4ade80}.dled.sy{background:var(--am);box-shadow:0 0 8px var(--am)}.dled.er{background:#f43f5e;box-shadow:0 0 8px #f43f5e}
+#sy{display:inline-flex;align-items:center;gap:7px;font:700 11px ui-monospace,Menlo,monospace;letter-spacing:.14em;color:var(--mt);white-space:nowrap}
 .err{color:var(--er);font-size:14px}.hint{color:var(--mt);font-size:13px}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
 #toast div{background:#2b3037;border:1px solid #3a4048;padding:10px 16px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
@@ -190,10 +192,10 @@ const openTasks=()=>S.threads.filter(m=>!m.arch).reduce((a,m)=>a+openCount(m),0)
 function topBar(mode){const n=openTasks();
   const t=mode==='tasks'?`<button class="ib" data-a="home">← Fäden</button>`:`<button class="ib" data-a="tasks">☑${n?` <small>${n}</small>`:''}</button>`;
   const a=mode==='arch'?`<button class="ib" data-a="home">← Fäden</button>`:`<button class="ib" data-a="archive" aria-label="Archiv">🗄</button>`;
-  return `<div class="bar"><div class="brand"><span class="logo">F</span>FLUX FADEN</div><div class="grow"></div><span id="sy" class="hint"></span>${mode==='tasks'?'':t}${mode==='tasks'?t:a}<button class="ib" data-a="settings" aria-label="Einstellungen">⚙</button></div>`}
-function paintTop(){const e=$('#sy');if(!e)return;const u=cloud.u,nm=u?String(u.displayName||u.email||'').split('@')[0].slice(0,14):'';
-  const st=cloud.state;e.textContent=!u?'○ Nicht angemeldet':st==='err'?'● Sync-Fehler':st==='sync'?'● '+nm+' · sync …':'● '+nm;
-  e.style.color=!u?'var(--am)':st==='err'?'var(--er)':'var(--ok)';e.style.fontWeight='600';e.style.whiteSpace='nowrap'}
+  return `<div class="bar"><div class="brand"><span class="logo">F</span>FLUX FADEN</div><div class="grow"></div><span id="sy"></span>${mode==='tasks'?'':t}${mode==='tasks'?t:a}<button class="ib" data-a="settings" aria-label="Einstellungen">⚙</button></div>`}
+function paintTop(){const e=$('#sy');if(!e)return;const u=cloud.u,st=cloud.state;
+  const c=!u?'':st==='err'?'er':st==='sync'?'sy':'ok',t=!u?'LOKAL':st==='err'?'FEHLER':st==='sync'?'SYNC …':'ONLINE';
+  e.innerHTML='<span class="dled '+c+'"></span>'+t;e.title=u?'Angemeldet als '+(u.email||u.displayName||''):'Nicht angemeldet – Fäden nur auf diesem Gerät (⚙ → Anmelden)'}
 function render(){if(ui.view==='home')homeV();else if(ui.view==='tasks')tasksV();else if(ui.view==='arch')archV();else threadV();paintTop()}
 function rowHTML(m){const o=openCount(m),le=m.e.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0];
   return `<div class="mrow st-${m.status}" data-a="open" data-id="${m.id}"><div><b>${esc(titleOf(m))}${m.cust&&m.topic?` <span style="font-weight:400;color:var(--mt)">· ${esc(m.topic)}</span>`:''}</b><small>${le?EK[le.kind].ic+' '+fmtD(le.date):''}${m.person?' · '+esc(m.person):''}${m.ticket?' · #'+esc(m.ticket):''}</small></div>${m.due&&!m.arch?`<span class="badge ${m.due<todayS()?'r':m.due===todayS()?'':'g'}">↻ ${fmtS(m.due)}</span>`:''}${o?`<span class="badge">${o} offen</span>`:''}</div>`}
