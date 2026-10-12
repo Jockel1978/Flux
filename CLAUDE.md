@@ -7,6 +7,7 @@ Besitzer: Jörg, informelles Deutsch, direkt und knapp, iterativ bauen, nicht sp
 - `public/faden/` – **Flux Faden**: Single-File-PWA für Kundenfälle (Verlauf aus Kontakten, Status, Wiedervorlage, Archiv, Stand der Dinge per KI, Screenshots mit Beschreibung, PDF/Teams-Text). Daten: localStorage `ffaden-v1`, Firestore-Collection `threads`.
 - `public/fb.js` – gebündeltes Firebase (Auth + Firestore) als `window.FBX`. Quelle: `fb-src/entry.js`, neu bauen mit esbuild.
 - `functions/api/ai.js` – Cloudflare Pages Function, ruft die Claude API (Messages). Geschützt durch Header `X-Flux-Key` und Same-Origin-Prüfung.
+- `functions/api/caldav.js` – Zoho-Kalender per CalDAV (REPORT mit Basic-Auth). Secrets im Pages-Projekt `flux-joerg`: `ZOHO_USER`, `ZOHO_PASS` (App-Passwort), `FLUX_KEY`. In Flux als Kalender-Abo mit dem Zoho-CalDAV-Link; Zugangsschlüssel liegt nur lokal (`flux-ckey`). Ungeprüft gegen echtes Zoho (nur Mock-Tests).
 - `functions/api/ics.js` – Kalender-Proxy. `functions/_middleware.js` – leitet `/` auf `/faden/` um, wenn der Host mit `flux-faden` oder `flux-notizen` beginnt.
 
 ## Deploy

@@ -584,7 +584,10 @@ async function gPush(t){if(!t.due)throw new Error('Aufgabe braucht ein Datum');c
  if(t.repeat)body.recurrence=['RRULE:FREQ='+{daily:'DAILY',weekly:'WEEKLY',monthly:'MONTHLY',yearly:'YEARLY'}[t.repeat]];
  const r=t.calId?await gFetch('calendars/primary/events/'+t.calId,{method:'PATCH',body:JSON.stringify(body)}):await gFetch('calendars/primary/events',{method:'POST',body:JSON.stringify(body)});
  t.calId=r.id;save();return r}
-async function refreshFeed(f){const txt=await fetchICS(f.url);S.events=S.events.filter(e=>e.src!==f.id);S.events.push(...parseICS(txt,f.id,f.color));save()}
+async function fetchCalDAV(url){const k=lsGet('flux-ckey')||'';if(!k)throw new Error('Zugangsschlüssel (FLUX_KEY) fehlt – unter dem Link eintragen');
+ let r;try{r=await fetch('api/caldav?url='+encodeURIComponent(url),{headers:{'X-Flux-Key':k}})}catch(e){throw new Error('Server-Funktion nicht erreichbar')}
+ const t=await r.text();if(!r.ok)throw new Error(t.slice(0,140).replace(/https?:\/\/\S+/g,''));return t}
+async function refreshFeed(f){const txt=f.caldav?await fetchCalDAV(f.url):await fetchICS(f.url);S.events=S.events.filter(e=>e.src!==f.id);S.events.push(...parseICS(txt,f.id,f.color));save()}
 
 /* ============ Rendering: sidebar ============ */
 function viewType(){const v=ui.view;return v==='notes'?'notes':v==='calendar'?'cal':v==='search'?'search':v==='board'?'board':v==='shifts'?'shifts':v==='shop'?'shop':v==='dash'?'dash':'tasks'}
@@ -714,8 +717,9 @@ function settingsHTML(){const base=location.origin==='null'||location.protocol==
  <div class="row2" style="margin-top:14px"><input class="inp" id="wxCity" value="${esc((S.set.weather||{}).name||'Großlohra')}" placeholder="Wetter-Ort"><button class="btn sec2 sm" data-act="wx-set">Wetter-Ort setzen</button></div>
  <h4 id="h-cal">Kalender</h4>
  <p class="hint"><b>Einfachste Variante (ohne Google-Anmeldung):</b> Kalender per iCal-Link abonnieren. Bei Google: Kalender-Einstellungen → „Geheime Adresse im iCal-Format“ kopieren und unten einfügen. Der Kalender wird beim Öffnen und alle 15 Minuten aktualisiert. Umgekehrt gehen Aufgaben mit Datum als .ics oder per „Google Kalender“-Link raus.</p>
- ${S.set.feeds.map(f=>`<div class="feed"><span class="dot" style="--c:${f.color}"></span><div style="flex:1;min-width:0"><b>${esc(f.name)}</b><div class="hint" style="margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.url?esc(f.url):'Datei-Import'} · ${S.events.filter(e=>e.src===f.id).length} Termine</div></div>${f.url?`<button class="btn sec2 sm" data-act="feed-refresh" data-id="${f.id}">${ic('sync')}</button>`:''}<button class="btn danger sm" data-act="feed-del" data-id="${f.id}">${ic('trash')}</button></div>`).join('')}
+ ${S.set.feeds.map(f=>`<div class="feed"><span class="dot" style="--c:${f.color}"></span><div style="flex:1;min-width:0"><b>${esc(f.name)}</b><div class="hint" style="margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.caldav?'Zoho (CalDAV)':f.url?esc(f.url):'Datei-Import'} · ${S.events.filter(e=>e.src===f.id).length} Termine</div></div>${f.url?`<button class="btn sec2 sm" data-act="feed-refresh" data-id="${f.id}">${ic('sync')}</button>`:''}<button class="btn danger sm" data-act="feed-del" data-id="${f.id}">${ic('trash')}</button></div>`).join('')}
  <div class="row2"><input class="inp" id="feedName" placeholder="Name (z. B. Arbeit)" style="max-width:180px"><input class="inp" id="feedUrl" placeholder="https://…/kalender.ics"><button class="btn sm" data-act="feed-add">Abonnieren</button></div>
+ <div class="row2" style="margin-top:8px"><input class="inp" id="feedKey" type="password" autocomplete="off" placeholder="Nur für Zoho-CalDAV: Zugangsschlüssel (FLUX_KEY)${lsGet('flux-ckey')?' – gespeichert':''}"></div>
  <div class="row2"><label class="btn sec2 sm" style="cursor:pointer">${ic('up')} .ics-Datei importieren<input type="file" accept=".ics,text/calendar" id="icsFile" hidden></label><button class="btn sec2 sm" data-act="ics-all">${ic('down')} Alle Aufgaben als .ics</button></div>
  <p class="hint" style="margin-top:16px"><b>Google Kalender (Live-Sync):</b> Trage eine OAuth-Client-ID (Web-Anwendung) aus der Google Cloud Console ein und erlaube deine Domain unter „Autorisierte JavaScript-Quellen“. Aktiviere dort die Google Calendar API.</p>
  <div class="row2"><input class="inp" data-s="gClient" value="${esc(S.set.gClient)}" placeholder="123456-abc.apps.googleusercontent.com"></div>
@@ -896,7 +900,8 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  case 'set-theme':S.set.theme=v;save();applyTheme();refreshModal();break;
  case 'set-accent':if((S.set.look||'industrial')==='industrial')S.set.accentI=v;else S.set.accent=v;save();applyTheme();refreshModal();break;
  case 'feed-add':{const name=$('#feedName').value.trim()||'Kalender',url=$('#feedUrl').value.trim();if(!/^(https?|webcal):/i.test(url)){toast('Bitte einen gültigen Kalender-Link eintragen');break}
-  const f={id:uid(),name,url,color:['#f43f5e','#8b5cf6','#14b8a6','#f59e0b','#3b82f6'][S.set.feeds.length%5]};try{await refreshFeed(f);S.set.feeds.push(f);save();toast('Kalender abonniert')}catch(err){toast('Kalender nicht abrufbar: '+(err&&err.message||'?'))}refreshModal();paintList();break}
+  const isCal=/^https:\/\/calendar\.zoho\.[a-z.]+\/caldav\//i.test(url);const kv=($('#feedKey')||{}).value;if(kv&&kv.trim())lsSet('flux-ckey',kv.trim());
+  const f={id:uid(),name,url,caldav:isCal,color:['#f43f5e','#8b5cf6','#14b8a6','#f59e0b','#3b82f6'][S.set.feeds.length%5]};try{await refreshFeed(f);S.set.feeds.push(f);save();toast('Kalender abonniert')}catch(err){toast('Kalender nicht abrufbar: '+(err&&err.message||'?'))}refreshModal();paintList();break}
  case 'feed-refresh':{const f=S.set.feeds.find(x=>x.id===id);try{await refreshFeed(f);toast('Aktualisiert')}catch(err){toast('Abruf fehlgeschlagen: '+err.message)}refreshModal();paintList();break}
  case 'feed-del':S.set.feeds=S.set.feeds.filter(f=>f.id!==id);S.events=S.events.filter(x=>x.src!==id);save();refreshModal();paintList();break;
  case 'gconnect':try{if(await gConnect()){const n=await gPull();toast(n+' Termine aus Google geladen');paintList()}}catch(err){toast(err.message)}refreshModal();break;
