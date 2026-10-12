@@ -1137,25 +1137,26 @@ async function fetchICS(url){url=url.replace(/^webcal:/i,'https:');
 const EV_COL=['#6366f1','#0ea5e9','#10b981','#f59e0b','#ec4899','#ef4444'];
 const isFileEv=e=>((S.set.feeds.find(f=>f.id===e.src)||{}).url)==='';
 const evSynced=e=>e.src==='local'||isFileEv(e);
-function evNew(d){const n=new Date(),h=Math.min(22,n.getHours()+1);d=d||today();ui.ev={id:null,title:'',date:d,endDate:d,allDay:false,time:pad(h)+':00',endTime:pad(h+1)+':00',loc:'',color:EV_COL[0]};sheet(evSheet)}
+function evNew(d){const n=new Date(),h=Math.min(22,n.getHours()+1);d=d||today();ui.ev={id:null,title:'',date:d,endDate:d,allDay:false,time:pad(h)+':00',endTime:pad(h+1)+':00',loc:'',desc:'',color:EV_COL[0]};sheet(evSheet)}
 function evEdit(id){const e=S.events.find(x=>x.id===id);if(!e||e.src!=='local')return;ui.ev={...e,endDate:e.endDate||e.date};sheet(evSheet)}
-function evRead(){const o=ui.ev;if(!o||!$('#evT'))return;const g=i=>($('#'+i)||{}).value;o.title=g('evT');o.date=g('evD')||o.date;if(o.allDay)o.endDate=g('evD2')||o.date;else{o.time=g('evS')||o.time;o.endTime=g('evE')||''}o.loc=g('evL')||''}
+function evRead(){const o=ui.ev;if(!o||!$('#evT'))return;const g=i=>($('#'+i)||{}).value;o.title=g('evT');o.date=g('evD')||o.date;if(o.allDay)o.endDate=g('evD2')||o.date;else{o.time=g('evS')||o.time;o.endTime=g('evE')||''}o.loc=g('evL')||'';o.desc=g('evN')||''}
 function evSheet(){const o=ui.ev;
  return sheetHead(o.id?'Termin bearbeiten':'Neuer Termin')+`<input class="inp" id="evT" value="${esc(o.title)}" placeholder="Titel, z. B. Zahnarzt" style="font-size:17px;margin-bottom:10px" autocomplete="off">
  <label class="chkrow"><input type="checkbox" data-act="ev-allday" ${o.allDay?'checked':''}> Ganztägig</label>
  <div class="row2" style="margin:6px 0 10px"><div style="flex:1;min-width:140px"><div class="hint" style="margin:0 0 4px">Datum</div><input class="inp" type="date" id="evD" value="${esc(o.date)}"></div>
  ${o.allDay?`<div style="flex:1;min-width:140px"><div class="hint" style="margin:0 0 4px">Bis</div><input class="inp" type="date" id="evD2" value="${esc(o.endDate||o.date)}"></div>`:`<div style="flex:1;min-width:110px"><div class="hint" style="margin:0 0 4px">Von</div><input class="inp" type="time" id="evS" value="${esc(o.time)}"></div><div style="flex:1;min-width:110px"><div class="hint" style="margin:0 0 4px">Bis</div><input class="inp" type="time" id="evE" value="${esc(o.endTime||'')}"></div>`}</div>
- <input class="inp" id="evL" value="${esc(o.loc||'')}" placeholder="Ort (optional)" autocomplete="off" style="margin-bottom:12px">
+ <input class="inp" id="evL" value="${esc(o.loc||'')}" placeholder="Ort (optional)" autocomplete="off" style="margin-bottom:10px">
+ <textarea class="inp" id="evN" rows="5" placeholder="Notizen / weitere Infos (optional), z. B. Kunde, Telefon, Anliegen" style="margin-bottom:12px;resize:vertical;line-height:1.45">${esc(o.desc||'')}</textarea>
  <div class="row2" style="gap:10px;margin-bottom:14px">${EV_COL.map(c=>`<button data-act="ev-color" data-v="${c}" aria-label="Farbe" style="width:34px;height:34px;border-radius:50%;background:${c};${o.color===c?'outline:3px solid var(--text);outline-offset:2px':''}"></button>`).join('')}</div>
  <div class="row2"><button class="btn" data-act="ev-save">Speichern</button>${o.id?`<button class="btn danger sm" data-act="ev-del">${ic('trash')} Löschen</button>`:''}</div>
  ${o.id?`<div class="row2" style="margin-top:12px"><a class="btn sec2 sm" href="${esc(evGcal(o))}" target="_blank" rel="noopener">${ic('cal')} Google Kalender</a><button class="btn sec2 sm" data-act="ev-ics">${ic('down')} .ics (Apple/Outlook)</button></div>`:''}`}
 function evEnd(o){return o.allDay?{d:addDays(o.endDate||o.date,1),t:''}:{d:o.date,t:o.endTime&&o.endTime>o.time?o.endTime:pad(Math.min(23,toMin(o.time)/60+1|0))+':'+(o.time||'00:00').slice(3)}}
-function evGcal(o){const e=evEnd(o);return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(o.title)+'&dates='+cmp(o.date,o.allDay?'':o.time)+'/'+cmp(e.d,e.t)+(o.loc?'&location='+encodeURIComponent(o.loc):'')+'&details='+encodeURIComponent('Aus Flux')}
+function evGcal(o){const e=evEnd(o);return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(o.title)+'&dates='+cmp(o.date,o.allDay?'':o.time)+'/'+cmp(e.d,e.t)+(o.loc?'&location='+encodeURIComponent(o.loc):'')+'&details='+encodeURIComponent(o.desc||'Aus Flux')}
 function evIcs(o){const e=evEnd(o),st=new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
- return icsWrap([['BEGIN:VEVENT','UID:'+o.id+'@flux','DTSTAMP:'+st,o.allDay?'DTSTART;VALUE=DATE:'+cmp(o.date):'DTSTART:'+cmp(o.date,o.time),o.allDay?'DTEND;VALUE=DATE:'+cmp(e.d):'DTEND:'+cmp(e.d,e.t),'SUMMARY:'+icsEsc(o.title),...(o.loc?['LOCATION:'+icsEsc(o.loc)]:[]),'END:VEVENT']])}
+ return icsWrap([['BEGIN:VEVENT','UID:'+o.id+'@flux','DTSTAMP:'+st,o.allDay?'DTSTART;VALUE=DATE:'+cmp(o.date):'DTSTART:'+cmp(o.date,o.time),o.allDay?'DTEND;VALUE=DATE:'+cmp(e.d):'DTEND:'+cmp(e.d,e.t),'SUMMARY:'+icsEsc(o.title),...(o.loc?['LOCATION:'+icsEsc(o.loc)]:[]),...(o.desc?['DESCRIPTION:'+icsEsc(o.desc)]:[]),'END:VEVENT']])}
 function evSave(){evRead();const o=ui.ev;if(!o)return;if(!o.title.trim()){toast('Bitte einen Titel eintragen');return}
  let ed=o.allDay?(o.endDate&&o.endDate>=o.date?o.endDate:o.date):o.date;
- const e={id:o.id||'e_'+uid(),title:o.title.trim(),loc:o.loc||'',allDay:!!o.allDay,time:o.allDay?'':o.time,endTime:o.allDay?'':(o.endTime||''),date:o.date,endDate:ed,color:o.color,src:'local'};
+ const e={id:o.id||'e_'+uid(),title:o.title.trim(),loc:o.loc||'',desc:(o.desc||'').trim(),allDay:!!o.allDay,time:o.allDay?'':o.time,endTime:o.allDay?'':(o.endTime||''),date:o.date,endDate:ed,color:o.color,src:'local'};
  const i=S.events.findIndex(x=>x.id===e.id);if(i>=0)S.events[i]=e;else S.events.push(e);ui.calSel=e.date;save();closeModal();paint();toast('Termin gespeichert')}
 const evAttr=e=>e.src==='local'?` data-act="ev-edit" data-id="${e.id}" style="cursor:pointer"`:'';
 function evStrip(){const t=today(),l=(calMap(t,t)[t]||{ev:[]}).ev;if(!l.length)return '';
