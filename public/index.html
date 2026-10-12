@@ -564,7 +564,7 @@ function parseICS(txt,src,color){txt=txt.replace(/\r?\n[ \t]/g,'');const evs=[];
  for(const e of evs){const s=icsDT(e.DTSTART,e.DTSTART_P);if(!s)continue;const en=e.DTEND?icsDT(e.DTEND,e.DTEND_P):null;let endDate=s.date,endTime='';
   if(en){endDate=en.date;endTime=en.time;if(s.allDay&&en.allDay)endDate=addDays(en.date,-1);if(endDate<s.date)endDate=s.date}
   const span=Math.round((pd(endDate)-pd(s.date))/864e5);
-  rrule(e.RRULE,s.date,lo,hi).forEach(d=>out.push({id:(e.UID||uid())+'_'+d,title:unesc(e.SUMMARY||'(ohne Titel)'),loc:unesc(e.LOCATION||''),allDay:s.allDay,time:s.time,endTime,date:d,endDate:addDays(d,span),src,color}))}
+  rrule(e.RRULE,s.date,lo,hi).forEach(d=>out.push({id:(e.UID||uid())+'_'+d,title:unesc(e.SUMMARY||'(ohne Titel)'),loc:unesc(e.LOCATION||''),desc:unesc(e.DESCRIPTION||''),allDay:s.allDay,time:s.time,endTime,date:d,endDate:addDays(d,span),src,color}))}
  return out}
 let gTok=null;
 function loadGsi(){return new Promise((res,rej)=>{if(window.google&&google.accounts&&google.accounts.oauth2)return res();const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=()=>rej(new Error('Google-Skript nicht ladbar'));document.head.appendChild(s)})}
@@ -1013,7 +1013,7 @@ function layoutLanes(items){items.sort((a,b)=>a.s-b.s||b.e-a.e);let cl=[],cend=0
  items.forEach(it=>{if(it.s>=cend){flush();cl=[];lanes=[]}let l=0;while(lanes[l]!==undefined&&lanes[l]>it.s)l++;lanes[l]=it.e;it.lane=l;cl.push(it);cend=Math.max(cend,it.e)});flush();return items}
 function weekHTML(){const start=monday(ui.calDate),m=calMap(start,addDays(start,6)),t=today(),days=[...Array(7)].map((_,i)=>addDays(start,i)),dn=['Mo','Di','Mi','Do','Fr','Sa','So'];
  const head=`<div class="wk-row"><div class="wk-h" style="cursor:default"></div>${days.map((d,i)=>`<div class="wk-h ${d===t?'today':''} ${d===ui.calSel?'sel':''}" data-act="cal-day" data-d="${d}">${dn[i]}<b>${pd(d).getDate()}</b></div>`).join('')}</div>`;
- const allday=`<div class="wk-row wk-ad"><div>Ganztag</div>${days.map(d=>{const x=m[d]||{ev:[],tk:[]},ty=shType(S.shifts.days[d]);return `<div data-drop="allday" data-d="${d}">${ty?`<div class="chip sh" style="--c:${ty.color}">${esc(ty.short)} ${ty.start?ty.start+'–'+ty.end:esc(ty.name)}</div>`:''}${x.ev.filter(e=>e.allDay||!e.time).map(e=>`<div class="chip ev" style="--c:${e.color||'#4285f4'}"${e.src==='local'?` data-act="ev-edit" data-id="${e.id}"`:''}>${esc(e.title)}</div>`).join('')}${x.tk.filter(k=>!k.time).map(k=>`<div class="chip tk p${k.prio} ${k.done?'done':''}" data-act="open-task" data-id="${k.id}" data-drag="task">${esc(k.title)}</div>`).join('')}</div>`}).join('')}</div>`;
+ const allday=`<div class="wk-row wk-ad"><div>Ganztag</div>${days.map(d=>{const x=m[d]||{ev:[],tk:[]},ty=shType(S.shifts.days[d]);return `<div data-drop="allday" data-d="${d}">${ty?`<div class="chip sh" style="--c:${ty.color}">${esc(ty.short)} ${ty.start?ty.start+'–'+ty.end:esc(ty.name)}</div>`:''}${x.ev.filter(e=>e.allDay||!e.time).map(e=>`<div class="chip ev" style="--c:${e.color||'#4285f4'}"${` data-act="ev-edit" data-id="${e.id}"`}>${esc(e.title)}</div>`).join('')}${x.tk.filter(k=>!k.time).map(k=>`<div class="chip tk p${k.prio} ${k.done?'done':''}" data-act="open-task" data-id="${k.id}" data-drag="task">${esc(k.title)}</div>`).join('')}</div>`}).join('')}</div>`;
  const hours=[...Array(24)].map((_,h)=>`<span style="top:${h*HH}px">${h?pad(h)+':00':''}</span>`).join('');
  const nowM=new Date().getHours()*60+new Date().getMinutes();
  const cols=days.map(d=>{const x=m[d]||{ev:[],tk:[]},items=[];
@@ -1021,14 +1021,14 @@ function weekHTML(){const start=monday(ui.calDate),m=calMap(start,addDays(start,
   x.tk.filter(k=>k.time).forEach(k=>{const s=toMin(k.time);items.push({s,e:s+60,kind:'tk',o:k})});
   layoutLanes(items);
   const blocks=items.map(it=>{const w=100/it.n,st=`top:${it.s*HH/60}px;height:${Math.max(22,(it.e-it.s)*HH/60-2)}px;left:calc(${it.lane*w}% + 1px);width:calc(${w}% - 3px)`;
-   return it.kind==='ev'?`<div class="wk-blk ev" style="${st};--c:${it.o.color||'#4285f4'}"${it.o.src==='local'?` data-act="ev-edit" data-id="${it.o.id}"`:''}><b>${it.o.time}</b> ${esc(it.o.title)}</div>`:`<div class="wk-blk p${it.o.prio} ${it.o.done?'done':''}" style="${st}" data-act="open-task" data-id="${it.o.id}" data-drag="task"><b>${it.o.time}</b> ${esc(it.o.title)}</div>`}).join('');
+   return it.kind==='ev'?`<div class="wk-blk ev" style="${st};--c:${it.o.color||'#4285f4'}"${` data-act="ev-edit" data-id="${it.o.id}"`}><b>${it.o.time}</b> ${esc(it.o.title)}</div>`:`<div class="wk-blk p${it.o.prio} ${it.o.done?'done':''}" style="${st}" data-act="open-task" data-id="${it.o.id}" data-drag="task"><b>${it.o.time}</b> ${esc(it.o.title)}</div>`}).join('');
   return `<div class="wk-col ${d===t?'today':''}" data-drop="day" data-d="${d}">${blocks}${d===t?`<div class="wk-now" style="top:${nowM*HH/60}px"></div>`:''}</div>`}).join('');
  return `<div class="wk" style="--hh:${HH}px">${head}${allday}<div class="wk-body" id="wkbody"><div class="wk-grid"><div class="wk-t">${hours}</div>${cols}</div></div></div>`}
 function calHTML(){const cd=pd(ui.calDate),week=ui.calMode==='week';let title,grid;
  if(week){const s=monday(ui.calDate);title=pd(s).toLocaleDateString('de-DE',{day:'numeric',month:'short'})+' – '+pd(addDays(s,6)).toLocaleDateString('de-DE',{day:'numeric',month:'short',year:'numeric'});grid=weekHTML()}
  else{const f=new Date(cd.getFullYear(),cd.getMonth(),1),start=monday(ymd(f)),m=calMap(start,addDays(start,41)),t=today();title=cd.toLocaleDateString('de-DE',{month:'long',year:'numeric'});let cells='';
   for(let i=0;i<42;i++){const d=addDays(start,i),x=m[d]||{ev:[],tk:[]},dd=pd(d),ty=shType(S.shifts.days[d]);
-   const items=[...x.ev.map(e=>`<div class="chip ev" style="--c:${e.color||'#4285f4'}" title="${esc(e.title)}"${e.src==='local'?` data-act="ev-edit" data-id="${e.id}"`:''}>${e.time&&!e.allDay?e.time+' ':''}${esc(e.title)}</div>`),...sortT(x.tk).map(k=>`<div class="chip tk p${k.prio} ${k.done?'done':''}" data-act="open-task" data-id="${k.id}" data-drag="task">${k.time?k.time+' ':''}${esc(k.title)}</div>`)];
+   const items=[...x.ev.map(e=>`<div class="chip ev" style="--c:${e.color||'#4285f4'}" title="${esc(e.title)}"${` data-act="ev-edit" data-id="${e.id}"`}>${e.time&&!e.allDay?e.time+' ':''}${esc(e.title)}</div>`),...sortT(x.tk).map(k=>`<div class="chip tk p${k.prio} ${k.done?'done':''}" data-act="open-task" data-id="${k.id}" data-drag="task">${k.time?k.time+' ':''}${esc(k.title)}</div>`)];
    cells+=`<div class="cell ${dd.getMonth()!==cd.getMonth()?'out':''} ${d===t?'today':''} ${d===ui.calSel?'sel':''}" data-act="cal-day" data-drop="cal-day" data-d="${d}"><div class="dnr"><div class="dn">${dd.getDate()}</div>${ty?`<span class="shb" style="--c:${ty.color}">${esc(ty.short)}</span>`:''}</div>${items.slice(0,3).join('')}${items.length>3?`<div class="chip mo">+${items.length-3} weitere</div>`:''}</div>`}
   grid=`<div class="cal">${['Mo','Di','Mi','Do','Fr','Sa','So'].map(x=>`<div class="dow">${x}</div>`).join('')}${cells}</div>`}
  return `<div class="col-in"><div class="calhead"><h1>${esc(title)}</h1><button class="iconb" data-act="cal-prev" aria-label="Zurück">${ic('left')}</button><button class="ghost" data-act="cal-today" style="background:var(--panel);border:1px solid var(--line)">Heute</button><button class="iconb" data-act="cal-next" aria-label="Weiter">${ic('right')}</button>
@@ -1139,7 +1139,13 @@ const isFileEv=e=>((S.set.feeds.find(f=>f.id===e.src)||{}).url)==='';
 const evSynced=e=>e.src==='local'||isFileEv(e);
 const EV_TPL='👤 Kunde: \n📞 Telefon: \n📌 Anliegen: ';
 function evNew(d){const n=new Date(),h=Math.min(22,n.getHours()+1);d=d||today();ui.ev={id:null,title:'',date:d,endDate:d,allDay:false,time:pad(h)+':00',endTime:pad(h+1)+':00',loc:'',desc:EV_TPL,color:EV_COL[0]};sheet(evSheet)}
-function evEdit(id){const e=S.events.find(x=>x.id===id);if(!e||e.src!=='local')return;ui.ev={...e,endDate:e.endDate||e.date};sheet(evSheet)}
+function evEdit(id){const e=S.events.find(x=>x.id===id);if(!e)return;if(e.src!=='local'){ui.evv=e;sheet(evViewSheet);return}ui.ev={...e,endDate:e.endDate||e.date};sheet(evSheet)}
+function evViewSheet(){const e=ui.evv,f=S.set.feeds.find(x=>x.id===e.src);
+ const when=(e.endDate&&e.endDate!==e.date?esc(dlabel(e.date))+' – '+esc(dlabel(e.endDate)):esc(dlabel(e.date)))+' · '+(e.allDay?'ganztägig':esc(e.time)+(e.endTime?'–'+esc(e.endTime):''));
+ const body=esc(e.desc||'').replace(/(\+?\d[\d ()\/-]{6,}\d)/g,m=>`<a href="tel:${m.replace(/[^\d+]/g,'')}" style="color:var(--accent)">${m}</a>`);
+ return sheetHead(e.title)+`<div class="hint" style="margin:0 0 10px">${when}</div>${e.loc?`<div style="margin-bottom:10px">📍 ${esc(e.loc)}</div>`:''}
+ ${e.desc?`<div style="white-space:pre-wrap;line-height:1.6;margin-bottom:14px">${body}</div>`:'<div class="hint" style="margin-bottom:14px">Keine Notizen.</div>'}
+ <div class="hint">Kalender: ${esc(f?f.name:'extern')} · nur lesbar, Änderungen im Originalkalender</div>`}
 function evRead(){const o=ui.ev;if(!o||!$('#evT'))return;const g=i=>($('#'+i)||{}).value;o.title=g('evT');o.date=g('evD')||o.date;if(o.allDay)o.endDate=g('evD2')||o.date;else{o.time=g('evS')||o.time;o.endTime=g('evE')||''}o.loc=g('evL')||'';o.desc=g('evN')||''}
 function evSheet(){const o=ui.ev;
  return sheetHead(o.id?'Termin bearbeiten':'Neuer Termin')+`<input class="inp" id="evT" value="${esc(o.title)}" placeholder="Titel, z. B. Zahnarzt" style="font-size:17px;margin-bottom:10px" autocomplete="off">
@@ -1159,7 +1165,7 @@ function evSave(){evRead();const o=ui.ev;if(!o)return;if(!o.title.trim()){toast(
  let ed=o.allDay?(o.endDate&&o.endDate>=o.date?o.endDate:o.date):o.date;
  const e={id:o.id||'e_'+uid(),title:o.title.trim(),loc:o.loc||'',desc:(o.desc||'').split('\n').filter(l=>!/^\s*\S{1,4}\s*(Kunde|Telefon|Anliegen):\s*$/.test(l)).join('\n').trim(),allDay:!!o.allDay,time:o.allDay?'':o.time,endTime:o.allDay?'':(o.endTime||''),date:o.date,endDate:ed,color:o.color,src:'local'};
  const i=S.events.findIndex(x=>x.id===e.id);if(i>=0)S.events[i]=e;else S.events.push(e);ui.calSel=e.date;save();closeModal();paint();toast('Termin gespeichert')}
-const evAttr=e=>e.src==='local'?` data-act="ev-edit" data-id="${e.id}" style="cursor:pointer"`:'';
+const evAttr=e=>` data-act="ev-edit" data-id="${e.id}" style="cursor:pointer"`;
 function evStrip(){const t=today(),l=(calMap(t,t)[t]||{ev:[]}).ev;if(!l.length)return '';
  return `<div class="blk" style="margin:0 0 18px"><h4>Termine heute</h4><div class="card" style="padding:4px 14px">${l.map(e=>`<div class="agrow"${evAttr(e).replace(' style="cursor:pointer"',' style="cursor:pointer"')}><div class="tm">${e.allDay?'Ganztag':esc(e.time)}</div><div class="bar" style="--c:${e.color||'#4285f4'}"></div><div><b>${esc(e.title)}</b>${e.loc?`<div class="hint" style="margin:0">${esc(e.loc)}</div>`:''}</div></div>`).join('')}</div></div>`}
 
