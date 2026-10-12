@@ -14,11 +14,13 @@ export async function onRequestGet({ request }) {
   }
   let res;
   try {
-    res = await fetch(target.toString(), { headers: { 'User-Agent': 'Flux/1.0 (calendar sync)' }, redirect: 'follow' });
+    res = await fetch(target.toString(), { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FluxCalendar/1.0)', 'Accept': 'text/calendar, text/plain, */*' }, redirect: 'follow' });
   } catch { return new Response('fetch failed', { status: 502 }); }
   const text = await res.text();
-  if (!res.ok || text.length > 3_000_000 || !/BEGIN:VCALENDAR/.test(text.slice(0, 2000))) {
-    return new Response('not a calendar', { status: 502 });
+  if (!res.ok) return new Response('Kalender-Server antwortet mit HTTP ' + res.status, { status: 502 });
+  if (text.length > 3_000_000) return new Response('Kalender zu gross', { status: 502 });
+  if (!/BEGIN:VCALENDAR/.test(text.slice(0, 2000))) {
+    return new Response('Antwort ist kein Kalender (' + (res.headers.get('content-type') || '?').slice(0, 40) + ')', { status: 502 });
   }
   return new Response(text, {
     headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Cache-Control': 'private, max-age=300' },

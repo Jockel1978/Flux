@@ -896,7 +896,7 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  case 'set-theme':S.set.theme=v;save();applyTheme();refreshModal();break;
  case 'set-accent':if((S.set.look||'industrial')==='industrial')S.set.accentI=v;else S.set.accent=v;save();applyTheme();refreshModal();break;
  case 'feed-add':{const name=$('#feedName').value.trim()||'Kalender',url=$('#feedUrl').value.trim();if(!/^(https?|webcal):/i.test(url)){toast('Bitte einen gültigen Kalender-Link eintragen');break}
-  const f={id:uid(),name,url,color:['#f43f5e','#8b5cf6','#14b8a6','#f59e0b','#3b82f6'][S.set.feeds.length%5]};try{await refreshFeed(f);S.set.feeds.push(f);save();toast('Kalender abonniert')}catch(err){toast('Kalender-Link nicht abrufbar. Prüfe den Link oder nutze den .ics-Import.')}refreshModal();paintList();break}
+  const f={id:uid(),name,url,color:['#f43f5e','#8b5cf6','#14b8a6','#f59e0b','#3b82f6'][S.set.feeds.length%5]};try{await refreshFeed(f);S.set.feeds.push(f);save();toast('Kalender abonniert')}catch(err){toast('Kalender nicht abrufbar: '+(err&&err.message||'?'))}refreshModal();paintList();break}
  case 'feed-refresh':{const f=S.set.feeds.find(x=>x.id===id);try{await refreshFeed(f);toast('Aktualisiert')}catch(err){toast('Abruf fehlgeschlagen: '+err.message)}refreshModal();paintList();break}
  case 'feed-del':S.set.feeds=S.set.feeds.filter(f=>f.id!==id);S.events=S.events.filter(x=>x.src!==id);save();refreshModal();paintList();break;
  case 'gconnect':try{if(await gConnect()){const n=await gPull();toast(n+' Termine aus Google geladen');paintList()}}catch(err){toast(err.message)}refreshModal();break;
@@ -1129,9 +1129,10 @@ function notifyTask(t){const body=(t.time?t.time+' Uhr · ':'')+dlabel(t.due);to
 function checkReminders(){if(!S.set.notify)return;const now=Date.now();let ch=false;
  S.tasks.forEach(t=>{const f=remindFire(t);if(f==null)return;const key=t.due+'|'+(t.time||'')+'|'+t.remind;if(now>=f&&now-f<6*3600e3&&t.remFired!==key){t.remFired=key;ch=true;notifyTask(t)}});if(ch)save()}
 function autoFeeds(){S.set.feeds.filter(f=>f.url).forEach(f=>refreshFeed(f).then(()=>{if(viewType()==='cal')renderCol()}).catch(()=>{}))}
-async function fetchICS(url){url=url.replace(/^webcal:/i,'https:');
- try{const r=await fetch('api/ics?url='+encodeURIComponent(url));if(r.ok&&/calendar/.test(r.headers.get('content-type')||''))return r.text()}catch(e){}
- const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}
+async function fetchICS(url){url=url.replace(/^webcal:/i,'https:');let why='';
+ try{const r=await fetch('api/ics?url='+encodeURIComponent(url));if(r.ok&&/calendar/.test(r.headers.get('content-type')||''))return r.text();why=((await r.text())||'').slice(0,90).replace(/https?:\/\/\S+/g,'')||('HTTP '+r.status)}catch(e){why='Server-Funktion nicht erreichbar'}
+ try{const r=await fetch(url);if(r.ok)return r.text();why=why||('HTTP '+r.status)}catch(e){}
+ throw new Error(why||'unbekannter Fehler')}
 
 /* ============ Termine (eigene Kalendereinträge) ============ */
 const EV_COL=['#6366f1','#0ea5e9','#10b981','#f59e0b','#ec4899','#ef4444'];
