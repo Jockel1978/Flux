@@ -191,7 +191,9 @@ function topBar(mode){const n=openTasks();
   const t=mode==='tasks'?`<button class="ib" data-a="home">← Fäden</button>`:`<button class="ib" data-a="tasks">☑${n?` <small>${n}</small>`:''}</button>`;
   const a=mode==='arch'?`<button class="ib" data-a="home">← Fäden</button>`:`<button class="ib" data-a="archive" aria-label="Archiv">🗄</button>`;
   return `<div class="bar"><div class="brand"><span class="logo">F</span>FLUX FADEN</div><div class="grow"></div><span id="sy" class="hint"></span>${mode==='tasks'?'':t}${mode==='tasks'?t:a}<button class="ib" data-a="settings" aria-label="Einstellungen">⚙</button></div>`}
-function paintTop(){const e=$('#sy');if(e)e.textContent=cloud.state==='sync'?'sync …':cloud.state==='err'?'Sync-Fehler':cloud.state==='ok'?'●':''}
+function paintTop(){const e=$('#sy');if(!e)return;const u=cloud.u,nm=u?String(u.displayName||u.email||'').split('@')[0].slice(0,14):'';
+  const st=cloud.state;e.textContent=!u?'○ Nicht angemeldet':st==='err'?'● Sync-Fehler':st==='sync'?'● '+nm+' · sync …':'● '+nm;
+  e.style.color=!u?'var(--am)':st==='err'?'var(--er)':'var(--ok)';e.style.fontWeight='600';e.style.whiteSpace='nowrap'}
 function render(){if(ui.view==='home')homeV();else if(ui.view==='tasks')tasksV();else if(ui.view==='arch')archV();else threadV();paintTop()}
 function rowHTML(m){const o=openCount(m),le=m.e.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0];
   return `<div class="mrow st-${m.status}" data-a="open" data-id="${m.id}"><div><b>${esc(titleOf(m))}${m.cust&&m.topic?` <span style="font-weight:400;color:var(--mt)">· ${esc(m.topic)}</span>`:''}</b><small>${le?EK[le.kind].ic+' '+fmtD(le.date):''}${m.person?' · '+esc(m.person):''}${m.ticket?' · #'+esc(m.ticket):''}</small></div>${m.due&&!m.arch?`<span class="badge ${m.due<todayS()?'r':m.due===todayS()?'':'g'}">↻ ${fmtS(m.due)}</span>`:''}${o?`<span class="badge">${o} offen</span>`:''}</div>`}
