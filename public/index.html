@@ -526,7 +526,8 @@ function parseQuick(text){let t=' '+text+' ';const o={due:'',time:'',prio:4,area
  o.title=t.replace(/\s+/g,' ').trim()||text.trim();return o}
 
 /* ============ Task ops ============ */
-const newTask=o=>Object.assign({id:uid(),title:'',desc:'',done:false,doneAt:0,due:'',time:'',prio:4,area:null,tags:[],sub:[],repeat:'',noteId:null,calId:'',created:Date.now(),status:'todo',remind:'',remFired:''},o);
+const custDesc=t=>[t.custNo||t.cust?'👤 Kunde: '+[t.custNo,t.cust].filter(Boolean).join(' · '):'',t.phone?'📞 Telefon: '+t.phone:'',t.desc||''].filter(Boolean).join('\n');
+const newTask=o=>Object.assign({id:uid(),title:'',custNo:'',cust:'',phone:'',desc:'',done:false,doneAt:0,due:'',time:'',prio:4,area:null,tags:[],sub:[],repeat:'',noteId:null,calId:'',created:Date.now(),status:'todo',remind:'',remFired:''},o);
 function addTask(o){const t=newTask(o);S.tasks.unshift(t);save();emit('task.created',t);queueGcal(t);return t}
 function nextDue(t){let n=t.due||today();const step=d=>{const x=pd(d);if(t.repeat==='daily')x.setDate(x.getDate()+1);else if(t.repeat==='weekly')x.setDate(x.getDate()+7);else if(t.repeat==='monthly'){const day=x.getDate();x.setDate(1);x.setMonth(x.getMonth()+1);x.setDate(Math.min(day,new Date(x.getFullYear(),x.getMonth()+1,0).getDate()))}else x.setFullYear(x.getFullYear()+1);return ymd(x)};
  n=step(n);let g=0;while(n<=today()&&g++<800)n=step(n);return n}
@@ -543,9 +544,9 @@ const cmp=(d,t)=>d.replace(/-/g,'')+(t?'T'+t.replace(':','')+'00':'');
 function endOf(t){if(!t.time)return{d:addDays(t.due,1),t:''};const x=new Date(pd(t.due).getTime());const [h,m]=t.time.split(':').map(Number);x.setHours(h+1,m);return{d:ymd(x),t:pad(x.getHours())+':'+pad(x.getMinutes())}}
 function icsFor(tasks){const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Flux//DE','CALSCALE:GREGORIAN'];const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
  tasks.filter(t=>t.due).forEach(t=>{const e=endOf(t);L.push('BEGIN:VEVENT','UID:'+t.id+'@flux','DTSTAMP:'+stamp,t.time?'DTSTART:'+cmp(t.due,t.time):'DTSTART;VALUE=DATE:'+cmp(t.due),t.time?'DTEND:'+cmp(e.d,e.t):'DTEND;VALUE=DATE:'+cmp(e.d),'SUMMARY:'+icsEsc((t.done?'✓ ':'')+t.title));
-  if(t.desc)L.push('DESCRIPTION:'+icsEsc(t.desc));if(t.repeat)L.push('RRULE:FREQ='+{daily:'DAILY',weekly:'WEEKLY',monthly:'MONTHLY',yearly:'YEARLY'}[t.repeat]);L.push('END:VEVENT')});
+  if(custDesc(t))L.push('DESCRIPTION:'+icsEsc(custDesc(t)));if(t.repeat)L.push('RRULE:FREQ='+{daily:'DAILY',weekly:'WEEKLY',monthly:'MONTHLY',yearly:'YEARLY'}[t.repeat]);L.push('END:VEVENT')});
  L.push('END:VCALENDAR');return L.join('\r\n')}
-function gcalLink(t){const e=endOf(t);return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(t.title)+'&dates='+cmp(t.due,t.time)+'/'+cmp(e.d,e.t)+'&details='+encodeURIComponent((t.desc||'')+'\n\nAus Flux')}
+function gcalLink(t){const e=endOf(t);return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(t.title)+'&dates='+cmp(t.due,t.time)+'/'+cmp(e.d,e.t)+'&details='+encodeURIComponent(custDesc(t)+'\n\nAus Flux')}
 function icsDT(v,p){const allDay=/VALUE=DATE(?!-)/.test(p||'')&&!/DATE-TIME/.test(p||'')||v.length===8;const date=`${v.slice(0,4)}-${v.slice(4,6)}-${v.slice(6,8)}`;if(!/^\d{8}/.test(v))return null;if(allDay)return{date,time:'',allDay:true};
  if(v.endsWith('Z')){const d=new Date(Date.UTC(+v.slice(0,4),+v.slice(4,6)-1,+v.slice(6,8),+v.slice(9,11),+v.slice(11,13)));return{date:ymd(d),time:pad(d.getHours())+':'+pad(d.getMinutes()),allDay:false}}
  return{date,time:v.slice(9,11)+':'+v.slice(11,13),allDay:false}}
@@ -580,7 +581,7 @@ async function gPull(){const q=new URLSearchParams({timeMin:pd(addDays(today(),-
   let ed=e.date;if(s.allDay)ed=addDays(e.date,-1);if(ed<s.date)ed=s.date;S.events.push({id:'g_'+it.id,title:it.summary||'(ohne Titel)',loc:it.location||'',allDay:s.allDay,time:s.time,endTime:e.time,date:s.date,endDate:ed,src:'google',color:'#4285f4'})}
  save();return (d.items||[]).length}
 async function gPush(t){if(!t.due)throw new Error('Aufgabe braucht ein Datum');const e=endOf(t),tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
- const body={summary:t.title,description:(t.desc||'')+'\n\nAus Flux',start:t.time?{dateTime:`${t.due}T${t.time}:00`,timeZone:tz}:{date:t.due},end:t.time?{dateTime:`${e.d}T${e.t}:00`,timeZone:tz}:{date:e.d}};
+ const body={summary:t.title,description:custDesc(t)+'\n\nAus Flux',start:t.time?{dateTime:`${t.due}T${t.time}:00`,timeZone:tz}:{date:t.due},end:t.time?{dateTime:`${e.d}T${e.t}:00`,timeZone:tz}:{date:e.d}};
  if(t.repeat)body.recurrence=['RRULE:FREQ='+{daily:'DAILY',weekly:'WEEKLY',monthly:'MONTHLY',yearly:'YEARLY'}[t.repeat]];
  const r=t.calId?await gFetch('calendars/primary/events/'+t.calId,{method:'PATCH',body:JSON.stringify(body)}):await gFetch('calendars/primary/events',{method:'POST',body:JSON.stringify(body)});
  t.calId=r.id;save();return r}
@@ -620,7 +621,7 @@ function groupsOf(list){if(ui.view==='inbox')return[{label:'',items:sortT(list)}
  days.forEach(d=>{const r=dlabel(d);push((r==='Morgen'?'Morgen · ':'')+longDate(d),fut.filter(x=>x.due===d))});push('Ohne Datum',list.filter(x=>!x.due));
  g.forEach(x=>{if(x.label==='Heute')x.label='Heute · '+longDate(t)});return g}
 function taskRow(t){const a=area(t.area),late=t.due&&t.due<today()&&!t.done;const sd=t.sub.length?`${t.sub.filter(s=>s.done).length}/${t.sub.length}`:'';const n=t.noteId&&getNote(t.noteId);
- const meta=[t.due?`<span class="pill ${late?'late':'mute'}">${ic('cal')}${esc(dlabel(t.due))}${t.time?' · '+t.time:''}</span>`:'',t.repeat?`<span class="pill mute">${ic('repeat')}</span>`:'',a?`<span class="pill area" style="--c:${a.color}">${esc(a.name)}</span>`:'',sd?`<span class="pill mute">${ic('list')}${sd}</span>`:'',n?`<span class="pill mute">${ic('note')}${esc(n.title).slice(0,24)}</span>`:'',...t.tags.map(g=>`<span class="pill mute">#${esc(g)}</span>`)].join('');
+ const meta=[t.custNo||t.cust?`<span class="pill area" style="--c:var(--accent)">${ic('user')}${esc([t.custNo,t.cust].filter(Boolean).join(' · ').slice(0,40))}</span>`:'',t.due?`<span class="pill ${late?'late':'mute'}">${ic('cal')}${esc(dlabel(t.due))}${t.time?' · '+t.time:''}</span>`:'',t.repeat?`<span class="pill mute">${ic('repeat')}</span>`:'',a?`<span class="pill area" style="--c:${a.color}">${esc(a.name)}</span>`:'',sd?`<span class="pill mute">${ic('list')}${sd}</span>`:'',n?`<span class="pill mute">${ic('note')}${esc(n.title).slice(0,24)}</span>`:'',...t.tags.map(g=>`<span class="pill mute">#${esc(g)}</span>`)].join('');
  return `<div class="trow ${t.done?'done':''} ${ui.sel&&ui.sel.id===t.id?'sel':''}" data-act="open-task" data-id="${t.id}"><button class="chk p${t.prio}" data-act="toggle-task" data-id="${t.id}" aria-label="Erledigt">${ic('check')}</button><div class="tmain"><div class="ttitle">${esc(t.title)}</div><div class="tmeta">${meta}</div></div></div>`}
 function renderCol(){const col=$('#col'),keep=col.scrollTop,vt=viewType();
  if(vt==='tasks')col.innerHTML=tasksHTML();else if(vt==='notes')col.innerHTML=notesColHTML();else if(vt==='cal')col.innerHTML=calHTML();else if(vt==='board')col.innerHTML=boardHTML();else if(vt==='shifts')col.innerHTML=shiftsHTML();else if(vt==='shop')col.innerHTML=shopHTML();else if(vt==='dash')col.innerHTML=dashHTML();else col.innerHTML=searchHTML();
@@ -647,7 +648,11 @@ function taskDetail(t){const note=t.noteId&&getNote(t.noteId);
  const opts=(arr,cur,blank)=>(blank?`<option value="">${blank}</option>`:'')+arr.map(([v,l])=>`<option value="${esc(v)}" ${cur===v?'selected':''}>${esc(l)}</option>`).join('');
  return `<div class="dhead"><button class="chk p${t.prio} ${t.done?'':''}" style="${t.done?'background:var(--pc)':''}" data-act="toggle-task" data-id="${t.id}">${t.done?ic('check').replace('<svg','<svg style="opacity:1"'):ic('check')}</button><button class="iconb" data-act="close-detail" aria-label="Schließen">${ic('x')}</button></div>
  <input class="titlein" data-f="title" value="${esc(t.title)}" placeholder="Titel">
- <textarea class="inp" data-f="desc" placeholder="Beschreibung / Notizen …">${esc(t.desc)}</textarea>
+ <div style="margin-top:8px">
+ <div class="field"><label>Kundennr.</label><input class="inp" data-f="custNo" value="${esc(t.custNo||'')}" placeholder="z. B. DD-26533" autocomplete="off"></div>
+ <div class="field"><label>Kunde</label><input class="inp" data-f="cust" value="${esc(t.cust||'')}" placeholder="Kundenname" autocomplete="off"></div>
+ <div class="field"><label>Telefon</label><input class="inp" type="tel" data-f="phone" value="${esc(t.phone||'')}" placeholder="+49 …" autocomplete="off"></div></div>
+ <textarea class="inp" data-f="desc" placeholder="Anliegen / Notizen …">${esc(t.desc)}</textarea>
  <div style="margin-top:8px">
  <div class="field"><label>Datum</label><input class="inp" type="date" data-f="due" value="${t.due}"></div>
  <div class="field"><label>Uhrzeit</label><input class="inp" type="time" data-f="time" value="${t.time}"></div>
@@ -691,7 +696,7 @@ const SLASH=[['Überschrift 1','# ',0],['Überschrift 2','## ',0],['Überschrift
 
 /* ============ Rendering: search ============ */
 function searchRes(q){q=q.trim().toLowerCase();if(!q)return '<p class="hint" style="padding:20px 4px">Tippe, um Aufgaben und Notizen zu durchsuchen.</p>';
- const ts=S.tasks.filter(t=>(t.title+' '+t.desc+' '+t.tags.join(' ')).toLowerCase().includes(q)).slice(0,40),ns=[];
+ const ts=S.tasks.filter(t=>(t.title+' '+t.desc+' '+(t.custNo||'')+' '+(t.cust||'')+' '+(t.phone||'')+' '+t.tags.join(' ')).toLowerCase().includes(q)).slice(0,40),ns=[];
  return `${ts.length?`<div class="grp"><h3>Aufgaben<span>${ts.length}</span></h3><div class="card">${ts.map(taskRow).join('')}</div></div>`:''}${ns.length?`<div class="grp"><h3>Notizen<span>${ns.length}</span></h3><div class="card" style="padding:6px">${ns.map(n=>`<div class="nitem" data-act="open-note" data-id="${n.id}"><b>${esc(n.title||'Ohne Titel')}</b><p>${esc(plain(n.body).slice(0,160))}</p></div>`).join('')}</div></div>`:''}${!ts.length&&!ns.length?'<div class="empty">Nichts gefunden.</div>':''}`}
 function searchHTML(){return `<div class="col-in"><div class="head"><h1>Suche</h1></div><div class="qa">${ic('search')}<input id="sq" placeholder="Aufgaben & Notizen durchsuchen …" value="${esc(ui.q)}"></div><div id="sres">${searchRes(ui.q)}</div></div>`}
 
@@ -724,6 +729,7 @@ function settingsHTML(){const base=location.origin==='null'||location.protocol==
  <p class="hint" style="margin-top:16px"><b>Google Kalender (Live-Sync):</b> Trage eine OAuth-Client-ID (Web-Anwendung) aus der Google Cloud Console ein und erlaube deine Domain unter „Autorisierte JavaScript-Quellen“. Aktiviere dort die Google Calendar API.</p>
  <div class="row2"><input class="inp" data-s="gClient" value="${esc(S.set.gClient)}" placeholder="123456-abc.apps.googleusercontent.com"></div>
  <div class="row2"><button class="btn sm" data-act="gconnect">${ic('sync')} Verbinden & Termine laden</button><span class="hint">${gTok?'✓ verbunden':'nicht verbunden'}</span></div>
+  <label class="chkrow"><input type="checkbox" data-setb="detailOnAdd" ${S.set.detailOnAdd!==false?'checked':''}> Nach dem Anlegen einer Aufgabe das Detailfenster öffnen (Kundennr., Kunde, Telefon)</label>
  <label class="chkrow"><input type="checkbox" data-setb="autoGcal" ${S.set.autoGcal?'checked':''}> Aufgaben mit Datum automatisch in Google Kalender spiegeln</label>
  <div class="row2"><button class="btn sec2 sm" data-act="gsync-all">${ic('sync')} Alle jetzt abgleichen</button></div>
  <h4>Erinnerungen</h4><p class="hint">Aufgaben mit Datum können dich erinnern (Feld „Erinnerung“ in der Aufgabe). Ohne Server funktioniert das nur, solange Flux geöffnet oder im Hintergrund des Geräts aktiv ist. Echte Push-Nachrichten bei geschlossener App brauchen den Firebase-Ausbau.</p>
@@ -913,7 +919,8 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  }}catch(err){console.error(err);toast('Fehler: '+err.message)}});
 
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target;
- if(f.id==='qa'){const i=$('#qai'),txt=i.value.trim();if(!txt)return;addFromText(txt);paintList();const n=$('#qai');n&&n.focus()}
+ if(f.id==='qa'){const i=$('#qai'),txt=i.value.trim();if(!txt)return;const nt=addFromText(txt);paintList();
+  if(S.set.detailOnAdd!==false&&nt){ui.sel={type:'task',id:nt.id};paintList();renderDetail();const c=document.querySelector('[data-f=custNo]');c&&c.focus()}else{const n=$('#qai');n&&n.focus()}}
  if(f.id==='qaday'){const i=$('#qai2'),txt=i.value.trim();if(!txt)return;addFromText(txt,{due:f.dataset.d});paintList();renderDetail();const n=$('#qai2');n&&n.focus()}});
 
 let _upd;
