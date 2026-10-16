@@ -218,7 +218,10 @@ a.btn{text-decoration:none}
 .cal.week .chip{white-space:normal}
 .chip.ev[data-act],.wk-blk.ev[data-act]{cursor:pointer}
 .chip.ev{background:color-mix(in srgb,var(--c) 16%,transparent);color:var(--c);border-left:3px solid var(--c)}
-.chip.tk{background:var(--panel2);border-left:3px solid var(--pc,var(--p4))}
+.chip.tk{background:none;border:1px dashed color-mix(in srgb,var(--muted) 60%,transparent);border-left:1px dashed color-mix(in srgb,var(--muted) 60%,transparent);color:var(--text)}
+.chip.tk::before,.wk-blk.tk::before{content:'';display:inline-block;width:9px;height:9px;border-radius:50%;border:2px solid var(--pc,var(--p4));margin-right:5px;vertical-align:-1px;box-sizing:border-box}
+.chip.tk.done::before,.wk-blk.tk.done::before{background:var(--pc,var(--p4))}
+.wk-blk.tk{background:var(--panel);border:1px dashed color-mix(in srgb,var(--muted) 60%,transparent);box-shadow:none}
 .chip.tk.p1{--pc:var(--p1)}.chip.tk.p2{--pc:var(--p2)}.chip.tk.p3{--pc:var(--p3)}
 .chip.tk.done{text-decoration:line-through;opacity:.55}
 .chip.mo{background:none;color:var(--muted);padding:0 4px}
@@ -1042,7 +1045,7 @@ function weekHTML(){const start=monday(ui.calDate),m=calMap(start,addDays(start,
   x.tk.filter(k=>k.time).forEach(k=>{const s=toMin(k.time);items.push({s,e:s+60,kind:'tk',o:k})});
   layoutLanes(items);
   const blocks=items.map(it=>{const w=100/it.n,st=`top:${it.s*HH/60}px;height:${Math.max(22,(it.e-it.s)*HH/60-2)}px;left:calc(${it.lane*w}% + 1px);width:calc(${w}% - 3px)`;
-   return it.kind==='ev'?`<div class="wk-blk ev" style="${st};--c:${it.o.color||'#4285f4'}"${` data-act="ev-edit" data-id="${it.o.id}"`}><b>${it.o.time}</b> ${esc(it.o.title)}</div>`:`<div class="wk-blk p${it.o.prio} ${it.o.done?'done':''}" style="${st}" data-act="open-task" data-id="${it.o.id}" data-drag="task"><b>${it.o.time}</b> ${esc(it.o.title)}</div>`}).join('');
+   return it.kind==='ev'?`<div class="wk-blk ev" style="${st};--c:${it.o.color||'#4285f4'}"${` data-act="ev-edit" data-id="${it.o.id}"`}><b>${it.o.time}</b> ${esc(it.o.title)}</div>`:`<div class="wk-blk tk p${it.o.prio} ${it.o.done?'done':''}" style="${st}" data-act="open-task" data-id="${it.o.id}" data-drag="task"><b>${it.o.time}</b> ${esc(it.o.title)}</div>`}).join('');
   return `<div class="wk-col ${d===t?'today':''}" data-drop="day" data-d="${d}">${blocks}${d===t?`<div class="wk-now" style="top:${nowM*HH/60}px"></div>`:''}</div>`}).join('');
  return `<div class="wk" style="--hh:${HH}px">${head}${allday}<div class="wk-body" id="wkbody"><div class="wk-grid"><div class="wk-t">${hours}</div>${cols}</div></div></div>`}
 function calHTML(){const cd=pd(ui.calDate),week=ui.calMode==='week';let title,grid;
