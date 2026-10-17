@@ -529,7 +529,8 @@ function parseQuick(text){let t=' '+text+' ';const o={due:'',time:'',prio:4,area
  o.title=t.replace(/\s+/g,' ').trim()||text.trim();return o}
 
 /* ============ Task ops ============ */
-const custDesc=t=>[t.custNo||t.cust?'👤 Kunde: '+[t.custNo,t.cust].filter(Boolean).join(' · '):'',t.phone?'📞 Telefon: '+t.phone:'',t.desc||''].filter(Boolean).join('\n');
+const isWork=t=>t.area==='beruf';
+const custDesc=t=>!isWork(t)?[t.desc||''].filter(Boolean).join('\n'):[t.custNo||t.cust?'👤 Kunde: '+[t.custNo,t.cust].filter(Boolean).join(' · '):'',t.phone?'📞 Telefon: '+t.phone:'',t.desc||''].filter(Boolean).join('\n');
 const newTask=o=>Object.assign({id:uid(),title:'',custNo:'',cust:'',phone:'',desc:'',done:false,doneAt:0,due:'',time:'',prio:4,area:null,tags:[],sub:[],repeat:'',noteId:null,calId:'',created:Date.now(),status:'todo',remind:'',remFired:''},o);
 function addTask(o){const t=newTask(o);S.tasks.unshift(t);save();emit('task.created',t);queueGcal(t);return t}
 function nextDue(t){let n=t.due||today();const step=d=>{const x=pd(d);if(t.repeat==='daily')x.setDate(x.getDate()+1);else if(t.repeat==='weekly')x.setDate(x.getDate()+7);else if(t.repeat==='monthly'){const day=x.getDate();x.setDate(1);x.setMonth(x.getMonth()+1);x.setDate(Math.min(day,new Date(x.getFullYear(),x.getMonth()+1,0).getDate()))}else x.setFullYear(x.getFullYear()+1);return ymd(x)};
@@ -624,7 +625,7 @@ function groupsOf(list){if(ui.view==='inbox')return[{label:'',items:sortT(list)}
  days.forEach(d=>{const r=dlabel(d);push((r==='Morgen'?'Morgen · ':'')+longDate(d),fut.filter(x=>x.due===d))});push('Ohne Datum',list.filter(x=>!x.due));
  g.forEach(x=>{if(x.label==='Heute')x.label='Heute · '+longDate(t)});return g}
 function taskRow(t){const a=area(t.area),late=t.due&&t.due<today()&&!t.done;const sd=t.sub.length?`${t.sub.filter(s=>s.done).length}/${t.sub.length}`:'';const n=t.noteId&&getNote(t.noteId);
- const meta=[t.prio<4?`<span class="pill" style="background:color-mix(in srgb,var(--p${t.prio}) 18%,transparent);color:var(--p${t.prio})">${ic('flag')}${['Hoch','Mittel','Niedrig'][t.prio-1]}</span>`:'',t.custNo||t.cust?`<span class="pill area" style="--c:var(--accent)">${ic('user')}${esc([t.custNo,t.cust].filter(Boolean).join(' · ').slice(0,40))}</span>`:'',t.due?`<span class="pill ${late?'late':'mute'}">${ic('cal')}${esc(dlabel(t.due))}${t.time?' · '+t.time:''}</span>`:'',t.repeat?`<span class="pill mute">${ic('repeat')}</span>`:'',a?`<span class="pill area" style="--c:${a.color}">${esc(a.name)}</span>`:'',sd?`<span class="pill mute">${ic('list')}${sd}</span>`:'',n?`<span class="pill mute">${ic('note')}${esc(n.title).slice(0,24)}</span>`:'',...t.tags.map(g=>`<span class="pill mute">#${esc(g)}</span>`)].join('');
+ const meta=[t.prio<4?`<span class="pill" style="background:color-mix(in srgb,var(--p${t.prio}) 18%,transparent);color:var(--p${t.prio})">${ic('flag')}${['Hoch','Mittel','Niedrig'][t.prio-1]}</span>`:'',isWork(t)&&(t.custNo||t.cust)?`<span class="pill area" style="--c:var(--accent)">${ic('user')}${esc([t.custNo,t.cust].filter(Boolean).join(' · ').slice(0,40))}</span>`:'',t.due?`<span class="pill ${late?'late':'mute'}">${ic('cal')}${esc(dlabel(t.due))}${t.time?' · '+t.time:''}</span>`:'',t.repeat?`<span class="pill mute">${ic('repeat')}</span>`:'',a?`<span class="pill area" style="--c:${a.color}">${esc(a.name)}</span>`:'',sd?`<span class="pill mute">${ic('list')}${sd}</span>`:'',n?`<span class="pill mute">${ic('note')}${esc(n.title).slice(0,24)}</span>`:'',...t.tags.map(g=>`<span class="pill mute">#${esc(g)}</span>`)].join('');
  return `<div class="trow ${t.done?'done':''} ${ui.sel&&ui.sel.id===t.id?'sel':''}" data-act="open-task" data-id="${t.id}"><button class="chk p${t.prio}" data-act="toggle-task" data-id="${t.id}" aria-label="Erledigt">${ic('check')}</button><div class="tmain"><div class="ttitle">${esc(t.title)}</div><div class="tmeta">${meta}</div></div></div>`}
 function renderCol(){const col=$('#col'),keep=col.scrollTop,vt=viewType();
  if(vt==='tasks')col.innerHTML=tasksHTML();else if(vt==='notes')col.innerHTML=notesColHTML();else if(vt==='cal')col.innerHTML=calHTML();else if(vt==='board')col.innerHTML=boardHTML();else if(vt==='shifts')col.innerHTML=shiftsHTML();else if(vt==='shop')col.innerHTML=shopHTML();else if(vt==='dash')col.innerHTML=dashHTML();else col.innerHTML=searchHTML();
@@ -652,15 +653,15 @@ function taskView(t){const ar=S.areas.find(a=>a.id===t.area),pl={1:'Hoch',2:'Mit
  const row=(l,v)=>v?`<div class="field"><label>${l}</label><div>${v}</div></div>`:'';
  const ph=t.phone?`<a href="tel:${esc(t.phone.replace(/[^+\d]/g,''))}">${esc(t.phone)}</a>`:'';
  return `<div style="display:flex;gap:8px;align-items:flex-start"><div class="titlein" style="flex:1;margin:0">${esc(t.title)}</div><button class="btn sec2 sm" data-act="t-edit">${ic('edit')} Bearbeiten</button></div>
- <div style="margin-top:8px">${row('Kundennr.',esc(t.custNo||''))}${row('Kunde',esc(t.cust||''))}${row('Telefon',ph)}${row('Anliegen',t.desc?esc(t.desc).replace(/\n/g,'<br>'):'')}${row('Datum',when)}${row('Priorität',pl?`<span class="pill" style="background:color-mix(in srgb,var(--p${t.prio}) 18%,transparent);color:var(--p${t.prio})">${ic('flag')}${pl}</span>`:'')}${row('Status',t.status==='doing'?'In Arbeit':'')}${row('Bereich',ar?esc(ar.name):'')}${row('Wiederholen',t.repeat?{daily:'Täglich',weekly:'Wöchentlich',monthly:'Monatlich',yearly:'Jährlich'}[t.repeat]:'')}${row('Tags',t.tags.length?t.tags.map(g=>'#'+esc(g)).join(' '):'')}</div>`}
+ <div style="margin-top:8px">${isWork(t)?row('Kundennr.',esc(t.custNo||''))+row('Kunde',esc(t.cust||''))+row('Telefon',ph):''}${row('Anliegen',t.desc?esc(t.desc).replace(/\n/g,'<br>'):'')}${row('Datum',when)}${row('Priorität',pl?`<span class="pill" style="background:color-mix(in srgb,var(--p${t.prio}) 18%,transparent);color:var(--p${t.prio})">${ic('flag')}${pl}</span>`:'')}${row('Status',t.status==='doing'?'In Arbeit':'')}${row('Bereich',ar?esc(ar.name):'')}${row('Wiederholen',t.repeat?{daily:'Täglich',weekly:'Wöchentlich',monthly:'Monatlich',yearly:'Jährlich'}[t.repeat]:'')}${row('Tags',t.tags.length?t.tags.map(g=>'#'+esc(g)).join(' '):'')}</div>`}
 function taskDetail(t){const note=t.noteId&&getNote(t.noteId);
  const opts=(arr,cur,blank)=>(blank?`<option value="">${blank}</option>`:'')+arr.map(([v,l])=>`<option value="${esc(v)}" ${cur===v?'selected':''}>${esc(l)}</option>`).join('');
  return `<div class="dhead"><button class="chk p${t.prio} ${t.done?'':''}" style="${t.done?'background:var(--pc)':''}" data-act="toggle-task" data-id="${t.id}">${t.done?ic('check').replace('<svg','<svg style="opacity:1"'):ic('check')}</button><button class="iconb" data-act="close-detail" aria-label="Schließen">${ic('x')}</button></div>
- ${ui.tedit===t.id?` <input class="titlein" data-f="title" value="${esc(t.title)}" placeholder="Titel">
- <div style="margin-top:8px">
+ ${ui.tedit===t.id?`<div class="seg" style="margin-bottom:10px">${S.areas.map(a=>`<button class="${t.area===a.id?'on':''}" data-act="t-area" data-v="${a.id}">${esc(a.name)}</button>`).join('')}</div> <input class="titlein" data-f="title" value="${esc(t.title)}" placeholder="Titel">
+ ${isWork(t)?` <div style="margin-top:8px">
  <div class="field"><label>Kundennr.</label><input class="inp" data-f="custNo" value="${esc(t.custNo||'')}" placeholder="z. B. DD-26533" autocomplete="off"></div>
  <div class="field"><label>Kunde</label><input class="inp" data-f="cust" value="${esc(t.cust||'')}" placeholder="Kundenname" autocomplete="off"></div>
- <div class="field"><label>Telefon</label><input class="inp" type="tel" data-f="phone" value="${esc(t.phone||'')}" placeholder="+49 …" autocomplete="off"></div></div>
+ <div class="field"><label>Telefon</label><input class="inp" type="tel" data-f="phone" value="${esc(t.phone||'')}" placeholder="+49 …" autocomplete="off"></div></div>`:''}
  <textarea class="inp" data-f="desc" placeholder="Anliegen / Notizen …">${esc(t.desc)}</textarea>
  <div style="margin-top:8px">
  <div class="field"><label>Datum</label><input class="inp" type="date" data-f="due" value="${t.due}"></div>
@@ -824,6 +825,7 @@ document.addEventListener('click',async e=>{if(Date.now()-suppressClick<400){e.p
  case 'nl-toggle':ui.nlHide=!nlHidden();paint();break;
  case 'close-detail':ui.sel=viewType()==='cal'?{type:'day',id:ui.calSel}:null;if(viewType()==='cal'&&innerWidth<=1180)ui.sel=null;paintList();renderDetail();break;
  case 'toggle-done':ui.doneOpen=!ui.doneOpen;renderCol();break;
+ case 't-area':{const t=getTask(ui.sel.id);t.area=v;save();paintList();renderDetail();if(isWork(t)){const c=document.querySelector('[data-f=custNo]');c&&!t.custNo&&c.focus()}break}
  case 'prio':{const t=getTask(ui.sel.id);t.prio=+v;save();paintList();renderDetail();break}
  case 'sub-toggle':{const t=getTask(ui.sel.id);t.sub[+el.dataset.i].done=!t.sub[+el.dataset.i].done;save();paintList();renderDetail();break}
  case 'sub-del':{const t=getTask(ui.sel.id);t.sub.splice(+el.dataset.i,1);save();paintList();renderDetail();break}
